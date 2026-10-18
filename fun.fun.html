@@ -1,0 +1,814 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3e9">
+  <meta name="description" content="Fun.fun is a free online game arcade. Play Cat Sprint and Snake Arena in your browser—run, jump, dodge, gobble pearls, and challenge rivals. No downloads needed.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://ian-liu17.github.io/my-arcade/fun.fun.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Fun.fun">
+  <meta property="og:title" content="Fun.fun — Free Online Games">
+  <meta property="og:description" content="Play Cat Sprint and Snake Arena in your browser for free. No downloads needed.">
+  <meta property="og:url" content="https://ian-liu17.github.io/my-arcade/fun.fun.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fun.fun — Free Browser Games">
+  <meta name="twitter:description" content="Run with a cat or challenge rival snakes. Play free at Fun.fun!">
+  <title>Fun.fun — Free Online Games</title>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Fun.fun — Free Online Games",
+      "description": "Fun.fun is a free browser arcade featuring Cat Sprint and Snake Arena.",
+      "url": "https://ian-liu17.github.io/my-arcade/fun.fun.html",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "My Arcade",
+        "url": "https://ian-liu17.github.io/my-arcade/"
+      },
+      "mainEntity": [
+        {
+          "@type": "VideoGame",
+          "name": "Cat Sprint",
+          "gamePlatform": "Web browser",
+          "applicationCategory": "Game"
+        },
+        {
+          "@type": "VideoGame",
+          "name": "Snake Arena",
+          "gamePlatform": "Web browser",
+          "applicationCategory": "Game",
+          "url": "snakes.html"
+        }
+      ]
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #26342d;
+      --muted: #748078;
+      --green: #2f7055;
+      --paper: #f6f3e9;
+      --line: #dce2d6;
+      --orange: #e99556;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 28px 18px 36px;
+      background:
+        radial-gradient(ellipse at 12% 12%, #fffdf4 0, transparent 35%),
+        var(--paper);
+      color: var(--ink);
+      font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+    }
+    main { width: min(100%, 1040px); margin: 0 auto; }
+    [hidden] { display: none !important; }
+    .arcade-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 2px 20px;
+    }
+    .arcade-header h1 { color: var(--green); }
+    .home-screen { padding: 14px 0 0; }
+    .home-intro { max-width: 650px; margin: 0 auto 28px; text-align: center; }
+    .home-intro p:last-child { color: var(--muted); line-height: 1.6; }
+    .game-picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .game-pick {
+      display: flex;
+      min-height: 190px;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 23px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #fffdf8;
+      text-align: left;
+      box-shadow: 0 9px 26px #374a3810;
+    }
+    .game-pick .game-icon { margin-bottom: 10px; font-size: 2.3rem; }
+    .game-pick strong { margin-bottom: 6px; font-size: 1.3rem; }
+    .game-pick span:last-child { color: var(--muted); font-weight: 500; line-height: 1.5; }
+    .game-nav { display: flex; gap: 9px; margin: 0 0 16px; }
+    .game-nav button { padding: 9px 15px; border-radius: 999px; }
+    .snake-shell { overflow: hidden; border: 1px solid #d7dfd4; border-radius: 22px; background: #fffdf8; box-shadow: 0 18px 48px #344a3515; }
+    .snake-stage { position: relative; display: grid; place-items: center; padding: 18px; background: #eaf3e9; }
+    .snake-shell { padding: 12px; }
+    .snake-frame { display: block; width: 100%; height: min(82vh, 860px); min-height: 540px; border: 0; border-radius: 14px; background: #0c1010; }
+    .snake-footer { display: flex; justify-content: space-between; gap: 16px; padding: 10px 6px 2px; color: var(--muted); font-size: .83rem; }
+    .snake-footer a { color: var(--green); font-weight: 800; }
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 2px 18px;
+    }
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--green);
+      font-size: .74rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.1rem); letter-spacing: -.055em; }
+    .tagline { margin: 5px 0 0; color: var(--muted); font-size: .96rem; }
+    .score-card {
+      min-width: 132px;
+      padding: 11px 17px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffdf8;
+      text-align: right;
+      box-shadow: 0 5px 18px #374a3810;
+    }
+    .score-card span {
+      display: block;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .13em;
+    }
+    .score-card strong { font-size: 1.65rem; font-variant-numeric: tabular-nums; }
+    .game-shell {
+      overflow: hidden;
+      border: 1px solid #d7dfd4;
+      border-radius: 22px;
+      background: #fffdf8;
+      box-shadow: 0 18px 48px #344a3515;
+    }
+    .canvas-wrap { position: relative; background: #eaf3e9; }
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 900 / 400;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: #f2f5e9d9;
+      text-align: center;
+    }
+    .overlay[hidden] { display: none; }
+    .overlay-card { max-width: 440px; }
+    .overlay h2 { margin: 0 0 8px; font-size: clamp(1.55rem, 4vw, 2.25rem); letter-spacing: -.04em; }
+    .overlay p { margin: 0 0 17px; color: #59665c; line-height: 1.55; }
+    .score-form { margin: 0 0 14px; }
+    .score-form[hidden] { display: none; }
+    .score-form label { display: block; margin-bottom: 7px; color: #59665c; font-size: .85rem; }
+    .score-form-row { display: flex; justify-content: center; gap: 8px; }
+    .score-form input {
+      width: min(190px, 55vw);
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fffdf8;
+      color: var(--ink);
+      font: inherit;
+    }
+    button {
+      border: 0;
+      color: white;
+      background: var(--green);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .12s ease, background .12s ease;
+    }
+    button:hover { background: #24583f; transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: 3px solid #e99556; outline-offset: 3px; }
+    .primary {
+      min-height: 46px;
+      padding: 0 23px;
+      border-radius: 999px;
+      box-shadow: 0 5px 14px #2f70552c;
+    }
+    .game-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 20px;
+      border-top: 1px solid #edf0e8;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .game-footer strong { color: var(--ink); }
+    .below {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: start;
+      padding: 19px 3px 0;
+    }
+    .how-to h2, .leaderboard h2 { margin: 0 0 11px; font-size: 1.02rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffdf8;
+      color: #57645a;
+      font-size: .77rem;
+    }
+    kbd {
+      color: var(--ink);
+      font-family: inherit;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+    .leaderboard {
+      width: min(100%, 260px);
+      padding: 15px 17px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffdf8;
+    }
+    .leaderboard ol { margin: 0; padding-left: 22px; color: #5f6a61; font-size: .85rem; }
+    .leaderboard li { padding: 3px 0 3px 3px; }
+    .leaderboard li span { float: right; color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .empty { margin: 0; color: var(--muted); font-size: .83rem; }
+    .mobile-controls {
+      display: none;
+      justify-content: center;
+      gap: 12px;
+      padding: 13px;
+      border-top: 1px solid #edf0e8;
+    }
+    .mobile-controls button {
+      min-width: 115px;
+      min-height: 46px;
+      border-radius: 14px;
+      touch-action: none;
+    }
+    .mobile-controls button span {
+      display: block;
+      opacity: .78;
+      font-size: .65rem;
+      letter-spacing: .08em;
+    }
+    @media (max-width: 620px) {
+      body { padding: 20px 12px 28px; }
+      header { align-items: center; }
+      .tagline { max-width: 230px; font-size: .84rem; }
+      .score-card { min-width: 102px; padding: 9px 12px; }
+      .score-card strong { font-size: 1.4rem; }
+      .game-footer { padding: 11px 13px; font-size: .75rem; }
+      .below { grid-template-columns: 1fr; }
+      .leaderboard { width: 100%; }
+      .mobile-controls { display: flex; }
+      .game-picks { grid-template-columns: 1fr; }
+      .game-pick { min-height: 155px; }
+      .snake-frame { height: 78vh; min-height: 500px; }
+      .snake-footer { flex-direction: column; gap: 5px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="arcade-header">
+      <div>
+        <p class="eyebrow">Your mini arcade</p>
+        <h1>Fun.fun <span aria-hidden="true">🎮</span></h1>
+        <p class="tagline">Pick a game and play!</p>
+      </div>
+    </header>
+    <section class="home-screen" id="home-screen">
+      <div class="home-intro">
+        <h2>Choose your game</h2>
+        <p>Run with a speedy cat or challenge rival snakes in the arena. Pick a game and play!</p>
+      </div>
+      <div class="game-picks">
+        <button class="game-pick" type="button" data-open-game="cat">
+          <span class="game-icon" aria-hidden="true">🐈</span>
+          <strong>Cat Sprint</strong>
+          <span>Jump over cactuses and dodge birds in an endless run.</span>
+        </button>
+        <button class="game-pick" type="button" data-open-game="snake">
+          <span class="game-icon" aria-hidden="true">🐍</span>
+          <strong>Snake Arena</strong>
+          <span>Eat two rivals to bring 1-3 new snakes. Grow and explore the arena!</span>
+        </button>
+      </div>
+    </section>
+    <nav class="game-nav" id="game-nav" aria-label="Game navigation" hidden>
+      <button type="button" id="home-button">← All games</button>
+    </nav>
+    <header id="cat-header" hidden>
+      <div>
+        <p class="eyebrow">A tiny endless runner</p>
+        <h1>Cat Sprint <span aria-hidden="true">🐾</span></h1>
+        <p class="tagline">Keep your paws moving. See how far you can run!</p>
+      </div>
+      <div class="score-card" aria-live="polite">
+        <span>DISTANCE</span>
+        <strong id="score">0</strong><span>METERS</span>
+      </div>
+    </header>
+    <section class="game-shell" id="cat-game" aria-label="Cat Sprint game" hidden>
+      <div class="canvas-wrap">
+        <canvas id="game" width="900" height="400" aria-label="Game area. Jump over cactuses and duck under birds."></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <h2 id="overlay-title">Ready, kitty?</h2>
+            <p id="overlay-message">Jump over the cactuses and duck or leap past the low-flying birds. The cat runs all by itself!</p>
+            <form class="score-form" id="score-form" hidden>
+              <label for="player-name">Add your name to the leaderboard</label>
+              <div class="score-form-row">
+                <input id="player-name" name="player-name" maxlength="16" placeholder="Kitty" autocomplete="nickname" required>
+                <button class="primary" type="submit">Save score</button>
+              </div>
+            </form>
+            <button class="primary" id="start-button" type="button">Start running</button>
+          </div>
+        </div>
+      </div>
+      <div class="game-footer">
+        <span><strong>Tip:</strong> Double-click or double-tap the game to duck.</span>
+        <span id="status" aria-live="polite">Ready when you are</span>
+      </div>
+      <div class="mobile-controls" aria-label="Touch controls">
+        <button type="button" id="jump-button">↑ JUMP<span>UP / 8</span></button>
+        <button type="button" id="duck-button">↓ DUCK<span>DOWN / 2</span></button>
+      </div>
+    </section>
+    <section class="below" id="cat-details" hidden>
+      <div class="how-to">
+        <h2>How to play</h2>
+        <div class="controls">
+          <span class="key"><kbd>↑ W 8 → D 6</kbd> Jump</span>
+          <span class="key"><kbd>↓ S 2 ← A 4</kbd> Duck</span>
+          <span class="key"><kbd>Double-click</kbd> Duck</span>
+          <span class="key"><kbd>Space</kbd> Jump</span>
+        </div>
+      </div>
+      <aside class="leaderboard" aria-labelledby="leaderboard-title">
+        <h2 id="leaderboard-title">🏆 Best runs</h2>
+        <ol id="leaderboard"></ol>
+        <p class="empty" id="leaderboard-empty">Your best runs will show up here.</p>
+      </aside>
+    </section>
+    <header id="snake-header" hidden>
+      <div>
+        <p class="eyebrow">A multiplayer-style arena</p>
+        <h1>Snake Arena <span aria-hidden="true">🐍</span></h1>
+        <p class="tagline">Outgrow rival snakes and rule the arena!</p>
+      </div>
+    </header>
+    <section class="snake-shell" id="snake-game" aria-label="Snake Arena" hidden>
+      <iframe
+        class="snake-frame"
+        src="snakes.html"
+        title="Snake Arena by My Arcade"
+        loading="lazy"
+        allow="fullscreen"
+        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <div class="snake-footer">
+        <span>The original Snake Arena game runs inside this arcade.</span>
+        <a href="snakes.html" target="_blank" rel="noopener noreferrer">Open Snake Arena directly ↗</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const homeScreen = document.getElementById("home-screen");
+      const gameNav = document.getElementById("game-nav");
+      const catHeader = document.getElementById("cat-header");
+      const catGame = document.getElementById("cat-game");
+      const catDetails = document.getElementById("cat-details");
+      const snakeHeader = document.getElementById("snake-header");
+      const snakeGame = document.getElementById("snake-game");
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const overlay = document.getElementById("overlay");
+      const titleEl = document.getElementById("overlay-title");
+      const messageEl = document.getElementById("overlay-message");
+      const startButton = document.getElementById("start-button");
+      const scoreForm = document.getElementById("score-form");
+      const playerNameInput = document.getElementById("player-name");
+      const statusEl = document.getElementById("status");
+      const leaderboardEl = document.getElementById("leaderboard");
+      const emptyLeaderboard = document.getElementById("leaderboard-empty");
+      const groundY = 330;
+      const cat = { x: 155, y: groundY, vy: 0, jumping: false, ducking: false, frame: 0 };
+      const world = {
+        running: false, over: false, distance: 0, speed: 5, frame: 0,
+        spawnIn: 100, obstacles: [], groundOffset: 0, cloudOffset: 0
+      };
+      const gravity = 0.68;
+      let lastClick = 0;
+      let activeGame = "home";
+      function showGame(game) {
+        activeGame = game;
+        homeScreen.hidden = game !== "home";
+        gameNav.hidden = game === "home";
+        catHeader.hidden = game !== "cat";
+        catGame.hidden = game !== "cat";
+        catDetails.hidden = game !== "cat";
+        snakeHeader.hidden = game !== "snake";
+        snakeGame.hidden = game !== "snake";
+        if (game !== "cat") world.running = false;
+      }
+
+      document.querySelectorAll("[data-open-game]").forEach(button => {
+        button.addEventListener("click", () => showGame(button.dataset.openGame));
+      });
+      
+      document.getElementById("home-button").addEventListener("click", () => showGame("home"));
+
+      function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, 400);
+        sky.addColorStop(0, "#e8f3e8");
+        sky.addColorStop(1, "#f8f4e6");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, 900, 400);
+
+        ctx.fillStyle = "#ffffffaa";
+        for (let i = 0; i < 4; i++) {
+          const x = ((i * 255 - world.cloudOffset * .22) % 1080 + 1080) % 1080 - 60;
+          const y = 55 + (i % 2) * 46;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 30, 10, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 18, y - 7, 20, 13, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 36, y, 25, 9, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "#d8e7d5";
+        ctx.beginPath();
+        ctx.moveTo(0, 278);
+        for (let x = 0; x <= 900; x += 80) {
+          ctx.quadraticCurveTo(x + 40, 244 + (x % 160 ? 14 : -9), x + 80, 278);
+        }
+        ctx.lineTo(900, groundY);
+        ctx.lineTo(0, groundY);
+        ctx.fill();
+
+        ctx.fillStyle = "#e1ead8";
+        ctx.fillRect(0, groundY, 900, 70);
+        ctx.strokeStyle = "#7d9b74";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY + 1);
+        ctx.lineTo(900, groundY + 1);
+        ctx.stroke();
+        ctx.strokeStyle = "#c1d0b8";
+        ctx.lineWidth = 2;
+        for (let x = -world.groundOffset % 54; x < 920; x += 54) {
+          ctx.beginPath();
+          ctx.moveTo(x, 353);
+          ctx.lineTo(x + 17, 353);
+          ctx.stroke();
+        }
+      }
+
+      function drawCat() {
+        const crouch = cat.ducking && !cat.jumping;
+        const bob = !cat.jumping && !crouch && world.running ? Math.sin(cat.frame * .36) * 3 : 0;
+        const feet = cat.jumping ? cat.y + 2 : groundY + (crouch ? 0 : bob);
+        const bodyY = crouch ? feet - 23 : feet - 39;
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#5d4032";
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(133, bodyY + 20);
+        ctx.bezierCurveTo(111, bodyY + 22, 108, bodyY + 3, 122, bodyY - 2);
+        ctx.stroke();
+        ctx.fillStyle = "#f1a45f";
+        ctx.beginPath();
+        ctx.ellipse(150, bodyY + 20, crouch ? 26 : 24, crouch ? 13 : 17, -.06, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f8c58b";
+        ctx.beginPath();
+        ctx.ellipse(148, bodyY + 23, crouch ? 14 : 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const headX = 172;
+        const headY = bodyY + (crouch ? -1 : 1);
+        ctx.fillStyle = "#f1a45f";
+        ctx.beginPath();
+        ctx.arc(headX, headY, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(headX - 12, headY - 8);
+        ctx.lineTo(headX - 13, headY - 24);
+        ctx.lineTo(headX - 2, headY - 15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(headX + 3, headY - 15);
+        ctx.lineTo(headX + 14, headY - 24);
+        ctx.lineTo(headX + 13, headY - 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#d7766a";
+        ctx.beginPath();
+        ctx.moveTo(headX - 9, headY - 18);
+        ctx.lineTo(headX - 11, headY - 11);
+        ctx.lineTo(headX - 5, headY - 14);
+        ctx.moveTo(headX + 6, headY - 14);
+        ctx.lineTo(headX + 11, headY - 19);
+        ctx.lineTo(headX + 10, headY - 11);
+        ctx.fill();
+        ctx.fillStyle = "#26342d";
+        ctx.beginPath();
+        ctx.ellipse(headX + 7, headY - 1, 2.2, 3.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#d7766a";
+        ctx.beginPath();
+        ctx.arc(headX + 14, headY + 6, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#8b6857";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(headX + 14, headY + 7);
+        ctx.lineTo(headX + 27, headY + 4);
+        ctx.moveTo(headX + 15, headY + 9);
+        ctx.lineTo(headX + 27, headY + 11);
+        ctx.stroke();
+
+        if (!crouch) {
+          ctx.strokeStyle = "#ab6f43";
+          ctx.lineWidth = 4;
+          const stride = world.running ? Math.sin(cat.frame * .42) * 8 : 0;
+          ctx.beginPath();
+          ctx.moveTo(139, feet - 13);
+          ctx.lineTo(137 - stride * .4, feet - 3);
+          ctx.lineTo(132 - stride * .4, feet);
+          ctx.moveTo(159, feet - 13);
+          ctx.lineTo(162 + stride * .4, feet - 3);
+          ctx.lineTo(167 + stride * .4, feet);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawCactus(obstacle) {
+        const x = obstacle.x;
+        const y = groundY;
+        ctx.fillStyle = "#477d59";
+        ctx.beginPath();
+        ctx.roundRect(x + 8, y - 42, 17, 43, 7);
+        ctx.roundRect(x, y - 25, 10, 21, 5);
+        ctx.roundRect(x - 1, y - 29, 12, 8, 4);
+        ctx.roundRect(x + 23, y - 34, 9, 21, 4);
+        ctx.roundRect(x + 20, y - 38, 12, 8, 4);
+        ctx.fill();
+        ctx.fillStyle = "#75a873";
+        ctx.fillRect(x + 13, y - 38, 3, 30);
+      }
+
+      function drawBird(obstacle) {
+        const flap = Math.sin(world.frame * .32 + obstacle.x) * 8;
+        const x = obstacle.x;
+        const y = obstacle.y;
+        ctx.save();
+        ctx.strokeStyle = "#596454";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(x - 12, y);
+        ctx.quadraticCurveTo(x - 2, y - 12 - flap, x + 8, y);
+        ctx.moveTo(x + 8, y);
+        ctx.quadraticCurveTo(x + 17, y - 10 + flap, x + 26, y);
+        ctx.stroke();
+        ctx.fillStyle = "#747b66";
+        ctx.beginPath();
+        ctx.ellipse(x + 7, y + 1, 12, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#e99556";
+        ctx.beginPath();
+        ctx.moveTo(x + 17, y);
+        ctx.lineTo(x + 25, y + 3);
+        ctx.lineTo(x + 17, y + 5);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function draw() {
+        drawBackground();
+        for (const obstacle of world.obstacles) {
+          if (obstacle.type === "cactus") drawCactus(obstacle);
+          else drawBird(obstacle);
+        }
+        drawCat();
+      }
+
+      function jump() {
+        if (!world.running || cat.jumping) return;
+        cat.ducking = false;
+        cat.jumping = true;
+        cat.vy = -12.8;
+        statusEl.textContent = "Meow! Nice jump!";
+      }
+
+      function duck() {
+        if (!world.running || cat.jumping) return;
+        cat.ducking = true;
+        statusEl.textContent = "Duck!";
+        window.setTimeout(() => { cat.ducking = false; }, 520);
+      }
+
+      function addObstacle() {
+        const birdChance = Math.min(.48, .24 + world.distance / 12000);
+        if (Math.random() < birdChance && world.distance > 130) {
+          world.obstacles.push({
+            type: "bird",
+            x: 930,
+            y: Math.random() < .68 ? groundY - 38 : groundY - 103
+          });
+        } else {
+          world.obstacles.push({ type: "cactus", x: 930 });
+        }
+        world.spawnIn = Math.max(68, 112 + Math.random() * 72 - world.speed * 2.8);
+      }
+
+      function collision(obstacle) {
+        if (obstacle.type === "cactus") {
+          const catBox = cat.ducking && !cat.jumping
+            ? { left: 133, right: 185, top: groundY - 22, bottom: groundY }
+            : { left: 133, right: 190, top: cat.y - 58, bottom: cat.y };
+          return catBox.right - 5 > obstacle.x + 2 &&
+            catBox.left + 5 < obstacle.x + 31 &&
+            catBox.bottom > groundY - 40 &&
+            catBox.top < groundY;
+        }
+        const catBox = cat.ducking && !cat.jumping
+          ? { left: 132, right: 185, top: groundY - 22, bottom: groundY }
+          : { left: 132, right: 190, top: cat.y - 52, bottom: cat.y };
+        const birdBox = { left: obstacle.x - 12, right: obstacle.x + 25, top: obstacle.y - 10, bottom: obstacle.y + 10 };
+        return catBox.right > birdBox.left && catBox.left < birdBox.right &&
+          catBox.bottom > birdBox.top && catBox.top < birdBox.bottom;
+      }
+
+      function finishRun() {
+        world.running = false;
+        world.over = true;
+        const meters = Math.floor(world.distance / 12);
+        statusEl.textContent = "Run over";
+        titleEl.textContent = "Bonk! Run over.";
+        messageEl.textContent = `You ran ${meters} meters. Want to try for a new best?`;
+        startButton.textContent = "Run again";
+        overlay.hidden = false;
+        scoreForm.dataset.score = String(meters);
+        scoreForm.hidden = meters <= 0;
+        if (meters > 0) playerNameInput.focus();
+      }
+
+      function update() {
+        if (world.running) {
+          world.frame++;
+          world.distance += world.speed / 10;
+          world.speed = Math.min(10.5, 5 + world.distance / 1300);
+          world.groundOffset += world.speed;
+          world.cloudOffset += world.speed * .18;
+          cat.frame++;
+          if (cat.jumping) {
+            cat.y += cat.vy;
+            cat.vy += gravity;
+            if (cat.y >= groundY) {
+              cat.y = groundY;
+              cat.vy = 0;
+              cat.jumping = false;
+            }
+          }
+          world.spawnIn--;
+          if (world.spawnIn <= 0) addObstacle();
+          for (const obstacle of world.obstacles) {
+            obstacle.x -= world.speed;
+            if (collision(obstacle)) {
+              finishRun();
+              break;
+            }
+          }
+          world.obstacles = world.obstacles.filter(obstacle => obstacle.x > -50);
+          scoreEl.textContent = String(Math.floor(world.distance / 12));
+        }
+        draw();
+        requestAnimationFrame(update);
+      }
+
+      function startGame() {
+        world.running = true;
+        world.over = false;
+        world.distance = 0;
+        world.speed = 5;
+        world.frame = 0;
+        world.spawnIn = 80;
+        world.obstacles = [];
+        cat.y = groundY;
+        cat.vy = 0;
+        cat.jumping = false;
+        cat.ducking = false;
+        scoreEl.textContent = "0";
+        overlay.hidden = true;
+        statusEl.textContent = "Running!";
+        canvas.focus();
+      }
+
+      function readScores() {
+        try {
+          const scores = JSON.parse(localStorage.getItem("catSprintLeaderboard") || "[]");
+          return Array.isArray(scores) ? scores.filter(entry =>
+            entry && typeof entry.name === "string" && Number.isFinite(entry.score)
+          ).slice(0, 5) : [];
+        } catch (error) {
+          console.error("Could not read the Cat Sprint leaderboard.", error);
+          return [];
+        }
+      }
+
+      function renderScores() {
+        const scores = readScores().sort((a, b) => b.score - a.score).slice(0, 5);
+        leaderboardEl.replaceChildren();
+        emptyLeaderboard.hidden = scores.length > 0;
+        for (const entry of scores) {
+          const item = document.createElement("li");
+          const name = document.createTextNode(entry.name);
+          const score = document.createElement("span");
+          score.textContent = `${entry.score} m`;
+          item.append(name, score);
+          leaderboardEl.append(item);
+        }
+      }
+
+      scoreForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const score = Number(scoreForm.dataset.score);
+        const name = playerNameInput.value.trim().slice(0, 16) || "Kitty";
+        const scores = readScores();
+        scores.push({ name, score });
+        scores.sort((a, b) => b.score - a.score);
+        try {
+          localStorage.setItem("catSprintLeaderboard", JSON.stringify(scores.slice(0, 5)));
+          scoreForm.hidden = true;
+          statusEl.textContent = "Score saved!";
+          renderScores();
+        } catch (error) {
+          console.error("Could not save the Cat Sprint leaderboard.", error);
+          statusEl.textContent = "Could not save leaderboard on this device";
+        }
+      });
+
+      window.addEventListener("keydown", event => {
+        const key = event.key.toLowerCase();
+        if (activeGame !== "cat") return;
+        if (event.target === playerNameInput) return;
+        if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) event.preventDefault();
+        if (!world.running && (key === "enter" || key === " ")) {
+          startGame();
+          return;
+        }
+        if (key === " " || key === "arrowup" || key === "w" || key === "8" || key === "arrowright" || key === "d" || key === "6") {
+          jump();
+        } else if (key === "arrowdown" || key === "s" || key === "2" || key === "arrowleft" || key === "a" || key === "4") {
+          duck();
+        }
+      });
+      canvas.addEventListener("dblclick", duck);
+      canvas.addEventListener("pointerup", event => {
+        const now = Date.now();
+        if (event.pointerType !== "mouse" && now - lastClick < 350) duck();
+        lastClick = now;
+      });
+      document.getElementById("jump-button").addEventListener("pointerdown", event => { event.preventDefault(); jump(); });
+      document.getElementById("duck-button").addEventListener("pointerdown", event => { event.preventDefault(); duck(); });
+      startButton.addEventListener("click", startGame);
+      const requestedGame = new URLSearchParams(location.search).get("game");
+      showGame(["cat", "snake"].includes(requestedGame) ? requestedGame : "home");
+
+      renderScores();
+      draw();
+      requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>
+
+
+
