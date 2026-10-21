@@ -135,7 +135,7 @@ Validate all three batch sizes with controlled random choices rather than relyin
 
 ## 10. Completion boundary
 
-The respawn feature and local startup fixes are implemented in snakes.html. game.html forwards to that game; index.html provides an updated title screen, and the arcade loads its local game file. Online support remains unavailable because its module is absent; the online button is explicitly disabled. Deployment is separate. The requested core rule is fixed at two player-eaten rivals per random batch of one to three new rivals; the recovery rule, safe-placement distances, and equal batch probabilities are explicit implementation defaults documented here.
+The respawn feature and local startup fixes are implemented in snakes.html. game.html forwards to that game; index.html provides an updated title screen, and the arcade loads its local game file. Online play is implemented in online.js using direct WebRTC and manual code exchange; see section 12. Deployment is separate. The requested core rule is fixed at two player-eaten rivals per random batch of one to three new rivals; the recovery rule, safe-placement distances, and equal batch probabilities are explicit implementation defaults documented here.
 
 
 ## 11. Easier difficulty update
@@ -144,3 +144,13 @@ The player now starts at size 5. The 15 initial rivals cycle through sizes 1-4, 
 
 ### Starting-size correction
 The player starts at the original size 1. All initial rivals now start at size 1, replacing the earlier player size 5 and rival size 1-4 settings. Replacement rivals remain size 1. Collecting one pearl lets the player eat an ungrown rival. Slower rivals and delayed hunting remain enabled.
+
+## 12. Online play without a database
+
+Implemented with browser WebRTC data channels in online.js. No database, account, game server, room directory, or hosted signaling service is required. Each connection supports a host and one friend. Both open Snake Arena. The host chooses Play Online > Host Game and shares the host code. The friend chooses Join Game, pastes that code, creates a reply code, and sends it back. The host pastes the reply and chooses Connect friend, then Start together. Every connection uses fresh codes. Public STUN services assist network discovery; game state travels directly between browsers.
+
+The host simulates both players, AI, collisions, pearls, shared exploration, XP, revives, and random respawn batches. Guests send steering only and render snapshots up to 20 times per second with interpolation. Each device follows its own living snake or the surviving teammate. Both players and all initial rivals start at size 1. Slower AI and the two-eaten / 1-3 respawn rule remain enabled.
+
+The host controls pause/resume, restart, and shared-wallet revives. Guests see the corresponding pause, revive, win, and loss screens. Leaving or losing the connection stops the session and offers reconnection with new codes or local play. Guest snapshots never persist host XP or scores to guest local storage. Large snapshots use bounded chunking and send backpressure.
+
+Limitations: networks requiring a TURN relay are not supported by this direct configuration. Failed connections display retry instructions. There is no automatic matchmaking, persistent online leaderboard, or host migration. HTTPS static hosting is recommended to share the game. Source changes require deployment before they appear on a published website.
