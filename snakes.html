@@ -20,7 +20,7 @@
 <label id="inCodeLabel">Paste your friend's code<textarea id="inCode" spellcheck="false" maxlength="40000"></textarea></label><button id="useCode">Use friend's code</button></div>
 <div class="actions"><button id="beginOnline" class="primary" hidden>Start together!</button><button id="leaveRoom">Back to local game</button></div>
 <p>No accounts or database. A public connection helper helps devices find each other. Some Wi-Fi networks block direct connections: try another network. The host must keep the game open and controls pauses, restarts, and revives. Game state stays in memory. Best scores and XP stay in local browser storage.</p>
-</section><script src="online.js"></script><script>
+</section><script src="online.js?v=20261023-angel-1"></script><script>
 'use strict'; const net=createOnlineSession();
 // All distances use a stable logical arena, independent of screen size.
 const CONFIG={width:2000,height:1280,enemies:15,respawnEvery:2,batchMin:1,batchMax:3,spawnClearance:140,spawnAttempts:100,pearls:300,speed:87,rivalSpeed:60,playerStartSize:1,rivalStartMax:1,huntDelay:8,huntRange:420,maxHunters:2,radiusGrowth:.45,radius:8,spacing:12,turnRate:3.8,pearlGrowth:1,pearlRadius:8,colors:['#b3ff83','#fd75aa','#67c7ff','#ffc568','#b79aff','#5be0ca','#ff8057','#e8f45a','#dd6cff','#42e3a8','#ff5d77','#8bb8ff','#ffd066','#b3f4ff','#ff9bd2']};
@@ -150,7 +150,7 @@ ui.start.addEventListener('click',()=>net.role==='guest'?null:state==='paused'?p
 function fitArena(){const r=document.getElementById('arena').getBoundingClientRect();const scale=Math.max(.01,Math.min(r.width/canvas.width,r.height/canvas.height));canvas.style.width=(canvas.width*scale)+'px';canvas.style.height=(canvas.height*scale)+'px';}
 new ResizeObserver(fitArena).observe(document.getElementById('arena'));window.addEventListener('resize',fitArena);
 // Start the self-contained local game.
-</script><script src="powerups.js"></script><script>reset();net.init();fitArena();requestAnimationFrame(frame);</script></body></html>
+</script><script src="powerups.js?v=20261023-angel-1"></script><script>reset();net.init();fitArena();requestAnimationFrame(frame);</script></body></html>
 
 
 

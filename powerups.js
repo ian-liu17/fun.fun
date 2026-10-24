@@ -77,9 +77,11 @@ function renderShop(){
  const index=Number(shopEl('shopPlayer').value)||0;
  shopEl('shopWallet').textContent='Wallet: '+xp+' XP';
  const signature=JSON.stringify([index,xp,shopProfile]);if(signature===shopSignature)return;shopSignature=signature;
- shopEl('shopItems').innerHTML=SKINS.map(k=>{const owned=shopProfile.owned.includes(k.id),active=shopProfile.equipped[index]===k.id;
+ const featured=['angel','invisible','devil'];
+ const shopSkins=[...featured.map(id=>SKINS.find(k=>k.id===id)),...SKINS.filter(k=>!featured.includes(k.id))];
+ shopEl('shopItems').innerHTML=shopSkins.map(k=>{const owned=shopProfile.owned.includes(k.id),active=shopProfile.equipped[index]===k.id;
  const paint=['rainbow','invisible'].includes(k.id)?'linear-gradient(90deg,red,orange,yellow,lime,cyan,blue,violet)':k.id==='stripes'?'repeating-linear-gradient(90deg,#ffab46 0 12px,#302018 12px 18px)':k.id==='spots'?'radial-gradient(circle,#23392c 25%,transparent 30%) 0 0/14px 14px #83edca':k.color;
- return '<div class="shop-item"><span class="skin-swatch" style="background:'+paint+'"></span><b>'+k.name+'</b><button data-skin="'+k.id+'" '+(active||!owned&&xp<k.cost?'disabled':'')+'>'+(active?'Equipped':owned?'Equip':'Buy · '+k.cost+' XP')+'</button></div>';
+ return '<div class="shop-item"><span class="skin-swatch" style="background:'+paint+'"></span><b>'+k.name+'</b><button data-skin="'+k.id+'" '+(active||!owned&&xp<k.cost?'disabled':'')+'>'+(active?'Equipped':owned?'Equip':xp<k.cost?'Need '+k.cost+' XP ('+(k.cost-xp)+' more)':'Buy · '+k.cost+' XP')+'</button></div>';
  }).join('');
 }
 shopEl('shopButton').onclick=()=>{
