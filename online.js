@@ -1,7 +1,7 @@
 /* Direct WebRTC multiplayer with manual signaling. No database or game server. */
 'use strict';
 function createOnlineSession(){
- const VERSION=2,CHUNK=12000,LIMIT=2000000;
+ const VERSION=3,CHUNK=12000,LIMIT=2000000;
  let pc=null,dc=null,epoch=0,busy=false,started=false,friend='',lastSent=0,lastHeard=0;
  let timer=null,connectTimer=null,dropTimer=null,parts=null,serial=0,lastInput=-Infinity,lastRender=0,remote=false,localXP=0,localShop=null;
  const el=id=>document.getElementById(id),panel=()=>el('roomPanel'),status=m=>el('roomStatus').textContent=m;
@@ -176,7 +176,7 @@ function createOnlineSession(){
   return {t:'state',v:VERSION,state,elapsed,coveredTiles,respawnProgress,xp,highScore,shop:shopProfile,
    notice:elapsed<noticeUntil?ui.spawnNotice.textContent:'',heading:ui.heading.textContent,message:ui.message.textContent,
    snakes:snakes.map((s,i)=>({id:s.isPlayer?'player-'+players.indexOf(s):s.id||'ai-'+i,x:Math.round(s.x*10)/10,y:Math.round(s.y*10)/10,
-    skin:s.skin||'default',boostUntil:s.boostUntil||0,boostReady:s.boostReady||0,invisibleUntil:s.invisibleUntil||0,invisibleReady:s.invisibleReady||0,devilUsed:s.devilUsed||0,devilWindow:s.devilWindow||0,devilArmed:!!s.devilArmed,size:s.size,color:s.color,angle:s.angle,isPlayer:s.isPlayer,alive:s.alive,name:s.name,score:s.score||0,kills:s.kills||0,shield:s.shield||0,
+    angelUntil:s.angelUntil||0,angelReady:s.angelReady||0,skin:s.skin||'default',boostUntil:s.boostUntil||0,boostReady:s.boostReady||0,invisibleUntil:s.invisibleUntil||0,invisibleReady:s.invisibleReady||0,devilUsed:s.devilUsed||0,devilWindow:s.devilWindow||0,devilArmed:!!s.devilArmed,size:s.size,color:s.color,angle:s.angle,isPlayer:s.isPlayer,alive:s.alive,name:s.name,score:s.score||0,kills:s.kills||0,shield:s.shield||0,
     parts:s.parts.flatMap(p=>[Math.round(p.x*10)/10,Math.round(p.y*10)/10])})),
    pearls:pearls.map(p=>[Math.round(p.x*10)/10,Math.round(p.y*10)/10,Math.round(p.hue),pearlValue(p)])};
  }
@@ -190,7 +190,7 @@ function createOnlineSession(){
     if(m.v!==VERSION){fail('Different game versions. Refresh both pages.');return;}
     friend=name(m.name)||'Friend';el('beginOnline').hidden=false;
     status(friend+' is connected! Choose Start together when ready.');
-   }else if(m.t==='action'&&started){if(m.action==='skin')purchaseSkin(1,m.id);else if(['boost','invisible','devil'].includes(m.action))usePower(players[1],m.action);
+   }else if(m.t==='action'&&started){if(m.action==='skin')purchaseSkin(1,m.id);else if(['boost','invisible','devil','angel'].includes(m.action))usePower(players[1],m.action);
    }else if(m.t==='input'&&started&&state==='playing'&&players[1]?.alive&&Number.isFinite(m.angle))
     players[1].target=Math.atan2(Math.sin(m.angle),Math.cos(m.angle));
    return;
@@ -201,7 +201,7 @@ function createOnlineSession(){
   if(!m.pearls.every(p=>Array.isArray(p)&&p.length===4&&p.every(Number.isFinite)&&[1,5,10].includes(p[3])))return;
   if(!Number.isFinite(m.elapsed)||!Number.isInteger(m.coveredTiles)||m.coveredTiles<0||m.coveredTiles>COVERAGE_TOTAL||!Number.isInteger(m.respawnProgress)||m.respawnProgress<0||m.respawnProgress>=CONFIG.respawnEvery||!Number.isSafeInteger(m.xp)||m.xp<0)return;
   if(!m.shop||!Array.isArray(m.shop.owned)||m.shop.owned.length>SKINS.length||!m.shop.owned.every(id=>SKINS.some(k=>k.id===id))||!Array.isArray(m.shop.equipped)||m.shop.equipped.length!==2||!m.shop.equipped.every(id=>m.shop.owned.includes(id)))return;
-  if(!m.snakes.every(s=>SKINS.some(k=>k.id===s.skin)&&['boostUntil','boostReady','invisibleUntil','invisibleReady','devilUsed','devilWindow'].every(k=>Number.isFinite(s[k])&&s[k]>=0)&&Number.isInteger(s.devilUsed)&&s.devilUsed<=5&&Number.isInteger(s.devilWindow)&&typeof s.devilArmed==='boolean'))return;
+  if(!m.snakes.every(s=>SKINS.some(k=>k.id===s.skin)&&['angelUntil','angelReady','boostUntil','boostReady','invisibleUntil','invisibleReady','devilUsed','devilWindow'].every(k=>Number.isFinite(s[k])&&s[k]>=0)&&Number.isInteger(s.devilUsed)&&s.devilUsed<=5&&Number.isInteger(s.devilWindow)&&typeof s.devilArmed==='boolean'))return;
   const humans=m.snakes.filter(s=>s.isPlayer);if(humans.length!==2||humans[0].id!=='player-0'||humans[1].id!=='player-1')return;
   const changed=state!==m.state||!started;started=true;remote=true;panel().hidden=true;ui.setup.hidden=true;
   const previous=new Map(snakes.map(s=>[s.id,s]));

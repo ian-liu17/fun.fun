@@ -8,8 +8,9 @@ const SKINS=[
  {id:'stripes',name:'Tiger stripes',cost:20,color:'#ffab46'},
  {id:'spots',name:'Polka dots',cost:20,color:'#83edca'},
  {id:'rainbow',name:'Rainbow',cost:20,color:'#ff79bc'},
- {id:'invisible',name:'Invisible snake',cost:35,color:'#ff79bc'},
- {id:'devil',name:'Devil snake',cost:35,color:'#ff4444'}
+ {id:'invisible',name:'Invisible snake',cost:70,color:'#ff79bc'},
+ {id:'devil',name:'Devil snake',cost:50,color:'#ff4444'},
+ {id:'angel',name:'Angel snake',cost:100,color:'#fff3bd'}
 ];
 const SHOP_KEY='myArcade.snakeArena.shop';
 let shopProfile={owned:['default'],equipped:['default','default']};
@@ -26,25 +27,28 @@ powerBar.innerHTML='<button id="shopButton">Shop</button><span id="powerButtons"
 document.querySelector('.controls').prepend(powerBar);
 const shopPanel=document.createElement('section');shopPanel.id='skinShop';shopPanel.className='room-panel';shopPanel.hidden=true;
 shopPanel.setAttribute('role','dialog');shopPanel.setAttribute('aria-modal','true');shopPanel.setAttribute('aria-label','Snake skin shop');
-shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Invisible and Devil: 35 XP. Buy once, equip anytime. In online play, both players share the host’s wallet and unlocks. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
+shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, both players share the host’s wallet and unlocks. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
 document.body.append(shopPanel);
 const shopEl=id=>document.getElementById(id);
 function saveShop(){if(net.role==='guest')return;try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopProfile));}catch{}}
 function equippedSkin(s){return SKINS.find(k=>k.id===s.skin)||SKINS[0];}
-function applySkin(s,id){s.skin=id;s.color=equippedSkin(s).color;if(id!=='devil')s.devilArmed=false;if(id!=='invisible')s.invisibleUntil=0;}
+function applySkin(s,id){s.skin=id;s.color=equippedSkin(s).color;if(id!=='devil')s.devilArmed=false;if(!['invisible','angel'].includes(id))s.invisibleUntil=0;if(id!=='angel')s.angelUntil=0;}
 function resetPowers(){for(let i=0;i<players.length;i++){
- const s=players[i];Object.assign(s,{boostUntil:0,boostReady:0,invisibleUntil:0,invisibleReady:0,devilUsed:0,devilWindow:0,devilArmed:false});applySkin(s,shopProfile.equipped[i]||'default');
+ const s=players[i];Object.assign(s,{angelUntil:0,angelReady:0,boostUntil:0,boostReady:0,invisibleUntil:0,invisibleReady:0,devilUsed:0,devilWindow:0,devilArmed:false});applySkin(s,shopProfile.equipped[i]||'default');
 }shopPanel.hidden=true;shopOpen=false;shopPaused=false;}
 function invisible(s){return s.invisibleUntil>elapsed;}
 function devilRemaining(s){return Math.max(0,5-(s.devilWindow===Math.floor(elapsed/1200)?s.devilUsed||0:0));}
 function usePower(s,action){
  if(state!=='playing'||!s?.alive)return false;
  if(action==='boost'&&elapsed>=(s.boostReady||0)){s.boostUntil=elapsed+5;s.boostReady=elapsed+30;return true;}
- if(action==='invisible'&&s.skin==='invisible'&&elapsed>=(s.invisibleReady||0)){s.invisibleUntil=elapsed+30;s.invisibleReady=elapsed+60;return true;}
+ if(action==='invisible'&&['invisible','angel'].includes(s.skin)&&elapsed>=(s.invisibleReady||0)){s.invisibleUntil=elapsed+30;s.invisibleReady=elapsed+60;return true;}
+ if(action==='angel'&&s.skin==='angel'&&elapsed>=(s.angelReady||0)){s.angelUntil=elapsed+10;s.angelReady=elapsed+40;return true;}
  if(action==='devil'&&s.skin==='devil'&&devilRemaining(s)>0){s.devilArmed=!s.devilArmed;return true;}
  return false;
 }
 function spendDevil(s){const windowIndex=Math.floor(elapsed/1200);if(s.devilWindow!==windowIndex){s.devilWindow=windowIndex;s.devilUsed=0;}s.devilUsed=(s.devilUsed||0)+1;s.devilArmed=false;}
+function angelCanEat(s){return s.skin==='angel'&&s.angelUntil>elapsed;}
+function empoweredCanEat(s){return angelCanEat(s)||devilCanEat(s);}
 function devilCanEat(s){return s.skin==='devil'&&s.devilArmed&&devilRemaining(s)>0;}
 function purchaseSkin(index,id){
  if(!Number.isInteger(index)||index<0||index>1)return false;
@@ -62,7 +66,8 @@ function renderPowerButtons(){
  const html=indices.map(i=>{const s=players[i];if(!s)return '';const disabled=state!=='playing'||!s.alive;
  const boost=Math.max(0,Math.ceil((s.boostReady||0)-elapsed));
  let result='<button data-player="'+i+'" data-power="boost" '+(disabled||boost?'disabled':'')+' aria-label="Speed boost for '+escapeHTML(s.name)+'">↑ '+(players.length>1?escapeHTML(s.name)+' ':'')+(s.boostUntil>elapsed?'Boosting!':boost?boost+'s':'Boost')+'</button>';
- if(s.skin==='invisible'){const wait=Math.max(0,Math.ceil((s.invisibleReady||0)-elapsed));result+='<button data-player="'+i+'" data-power="invisible" '+(disabled||wait?'disabled':'')+'>★ '+(invisible(s)?'Invisible '+Math.ceil(s.invisibleUntil-elapsed)+'s':wait?'Wait '+wait+'s':'Invisible')+'</button>';}
+ if(['invisible','angel'].includes(s.skin)){const wait=Math.max(0,Math.ceil((s.invisibleReady||0)-elapsed));result+='<button data-player="'+i+'" data-power="invisible" '+(disabled||wait?'disabled':'')+'>★ '+(invisible(s)?'Invisible '+Math.ceil(s.invisibleUntil-elapsed)+'s':wait?'Wait '+wait+'s':'Invisible')+'</button>';}
+ if(s.skin==='angel'){const wait=Math.max(0,Math.ceil((s.angelReady||0)-elapsed));result+='<button data-player="'+i+'" data-power="angel" '+(disabled||wait?'disabled':'')+'>&#128124; '+(angelCanEat(s)?'Angel Curse '+Math.ceil(s.angelUntil-elapsed)+'s':wait?'Curse wait '+wait+'s':'Angel Curse')+'</button>';}
  if(s.skin==='devil')result+='<button data-player="'+i+'" data-power="devil" '+(disabled||!devilRemaining(s)?'disabled':'')+'>😈 '+(s.devilArmed?'Bite armed':'Devil bite')+' · '+devilRemaining(s)+'/5</button>';
  return result;
  }).join('');if(powerSignature!==html){powerSignature=html;shopEl('powerButtons').innerHTML=html;}
@@ -111,4 +116,4 @@ function skinPaint(s,i){
  return s.color;
 }
 function drawSkinMark(s,p,i,radius){if(s.skin==='spots'&&i%2===0){ctx.beginPath();ctx.fillStyle='#244939';ctx.arc(p.x,p.y,Math.max(2,radius*.36),0,Math.PI*2);ctx.fill();}}
-function drawDevil(s){if(s.skin!=='devil')return;ctx.fillStyle='#ffe5b9';for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(-4,sign*5);ctx.lineTo(-9,sign*14);ctx.lineTo(3,sign*7);ctx.fill();}}
+function drawDevil(s){if(s.skin==='angel'){ctx.strokeStyle='#ffe782';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-14,7,3,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(-3,sign*5);ctx.lineTo(-11,sign*13);ctx.lineTo(5,sign*8);ctx.fill();}return;}if(s.skin!=='devil')return;ctx.fillStyle='#ffe5b9';for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(-4,sign*5);ctx.lineTo(-9,sign*14);ctx.lineTo(3,sign*7);ctx.fill();}}
