@@ -1,0 +1,78 @@
+/* Fit the game to the visible viewport, including phone notches and toolbars. */
+html{height:100%;overscroll-behavior:none}
+body{height:100svh;height:100dvh}
+.app{min-width:0;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+.app>*{min-width:0}
+.stage,.arena{overflow:hidden}
+.overlay{min-height:0;overflow:hidden}
+.overlay .card{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.room-panel{max-height:calc(100dvh - 24px);overscroll-behavior:contain;overflow-x:hidden;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.room-panel input,.room-panel select,.room-panel textarea{max-width:100%}
+#powerButtons{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.touch-steering{display:none}
+@media(max-width:900px),(pointer:coarse){
+ button,.play-link{min-height:44px}
+ input,select,textarea{font-size:16px}
+ .app{gap:6px}
+ header{flex-wrap:wrap;gap:5px}
+ header .brand{flex-shrink:0}
+ header h1{font-size:21px}
+ header .eyebrow{display:none}
+ .stats{width:100%;gap:5px;justify-content:flex-start}
+ .stats button{padding:6px 10px;font-size:12px}
+ .stats .player-stat{flex:1;max-width:none;min-width:70px;padding:5px 7px;font-size:10px}
+ .stats .enemy-stat{font-size:10px}
+ .stats .enemy-stat[title],.stats .enemy-stat:has(#pearlCount){display:none}
+ .leaderboard{display:flex;gap:8px;padding:6px 8px}
+ .leaderboard h2{font-size:9px;max-width:100px;overflow:hidden}
+ .leaderboard #highScore{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px}
+ .leaderboard ol{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .leaderboard li{font-size:10px;padding:5px 4px}
+ .leaderboard li:nth-child(n+4){display:none}
+ .leaderboard .dot{display:none}
+ .controls{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px}
+ .controls>p,.controls>a{display:none}
+ .touch-steering{display:flex;gap:6px;grid-column:1;grid-row:1}
+ .touch-pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:3px}
+ .touch-pad button{padding:0;font-size:22px;border-radius:12px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+ .touch-pad button[data-direction="up"]{grid-column:2}
+ .touch-pad button[data-direction="left"]{grid-column:1;grid-row:2}
+ .touch-pad button[data-direction="down"]{grid-column:2;grid-row:2}
+ .touch-pad button[data-direction="right"]{grid-column:3;grid-row:2}
+ .controls .power-controls{grid-column:2;grid-row:1;gap:5px;align-content:center}
+ .controls .power-controls button{min-height:44px;font-size:11px;padding:6px 8px;overflow-wrap:anywhere}
+ .controls #powerButtons{gap:5px}
+ .controls.two-touch{grid-template-columns:1fr}
+ .controls.two-touch .touch-steering{grid-column:1;justify-content:space-between}
+ .controls.two-touch .power-controls{grid-column:1;grid-row:2}
+ .card{border-radius:16px;padding:12px}
+ .card .badge{display:none}
+ .card h2{font-size:24px}
+ .card p{font-size:12px}
+ .setup-grid{grid-template-columns:1fr 1fr;gap:8px}
+ .setup-grid .wide{grid-column:1/-1}
+ .room-panel{inset:10px max(8px,env(safe-area-inset-right)) 10px max(8px,env(safe-area-inset-left));padding:14px;border-radius:16px}
+ .room-panel .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .room-panel .shop-item{min-width:0;padding:10px}
+ .room-panel .shop-item button{min-height:44px;white-space:normal}
+ .room-panel #closeShop{position:sticky;bottom:0;box-shadow:0 0 0 5px #18271e}
+}
+@media(max-height:500px) and (orientation:landscape){
+ .app{gap:4px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:max(4px,env(safe-area-inset-bottom));grid-template-rows:auto minmax(0,1fr) auto}
+ header{flex-wrap:nowrap;gap:8px}
+ header h1{font-size:17px;white-space:nowrap}
+ .stats{width:auto;flex:1;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;justify-content:flex-end}
+ .stats .enemy-stat:has(#enemies),.stats .enemy-stat:has(#coverage){display:none}
+ .stats .player-stat{flex:0 1 120px;min-width:85px}
+ .stats button{flex-shrink:0}
+ .leaderboard{display:none}
+ .controls{grid-template-columns:auto minmax(0,1fr)}
+ .controls .power-controls{flex-wrap:nowrap}
+ .controls #powerButtons{flex-wrap:nowrap}
+ .touch-pad{grid-template-columns:repeat(4,44px);grid-template-rows:44px;gap:4px}
+ .touch-pad button[data-direction]{grid-column:auto;grid-row:1}
+ .overlay .card{max-width:560px}
+ .card p{margin:5px 0}
+ .setup-grid{grid-template-columns:1fr 1fr 1fr;margin:6px 0}
+ .setup-grid .wide{grid-column:auto}
+}

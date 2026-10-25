@@ -27,7 +27,7 @@ powerBar.innerHTML='<button id="shopButton">Shop</button><span id="powerButtons"
 document.querySelector('.controls').prepend(powerBar);
 const shopPanel=document.createElement('section');shopPanel.id='skinShop';shopPanel.className='room-panel';shopPanel.hidden=true;
 shopPanel.setAttribute('role','dialog');shopPanel.setAttribute('aria-modal','true');shopPanel.setAttribute('aria-label','Snake skin shop');
-shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, both players share the host’s wallet and unlocks. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
+shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
 document.body.append(shopPanel);
 const shopEl=id=>document.getElementById(id);
 function saveShop(){if(net.role==='guest')return;try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopProfile));}catch{}}
@@ -110,7 +110,7 @@ function relocatePearl(p){
  if(best)Object.assign(p,best);
 }
 function replenishSpecials(){for(const [value,count,hue] of [[5,5,210],[10,1,275]])while(pearls.filter(p=>pearlValue(p)===value).length<count){const p={x:-1000,y:-1000,hue,value};relocatePearl(p);pearls.push(p);}}
-function eatPearl(s,index){const p=pearls[index],value=pearlValue(p);s.size+=value*CONFIG.pearlGrowth;if(s.isPlayer)s.score+=value;if(value>1)relocatePearl(p);else pearls.splice(index,1);body(s);}
+function eatPearl(s,index){if(net.firebase){net.eat(s,index);return;}const p=pearls[index],value=pearlValue(p);s.size+=value*CONFIG.pearlGrowth;if(s.isPlayer)s.score+=value;if(value>1)relocatePearl(p);else pearls.splice(index,1);body(s);}
 function skinPaint(s,i){
  if(s.skin==='invisible'||s.skin==='rainbow')return 'hsl('+((elapsed*55+i*19)%360)+' 90% 65%)';
  if(s.skin==='stripes')return i%3===1?'#302018':s.color;

@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Snake Arena | My Arcade</title>
+<style>
+:root{color-scheme:dark;font-family:ui-rounded,'Trebuchet MS',system-ui,sans-serif;color:#edf7f1;background:#0c1010}*{box-sizing:border-box}body{margin:0;height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(ellipse at top,#23352a,#0c1010 65%)}button,input,select{font:inherit}button,a{touch-action:manipulation}button,.play-link{border:1px solid #526258;background:#26392d;color:white;padding:10px 18px;border-radius:14px;font-weight:bold;min-height:42px;cursor:pointer}button:hover{background:#38503f}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ffc568;outline-offset:3px}.primary{background:#b3ff83;color:#15270f;border-color:#b3ff83}.primary:hover{background:#ccffa9}[hidden]{display:none!important}.app{height:100%;max-width:1200px;margin:auto;padding:12px 20px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px}header{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{text-decoration:none;color:inherit}.eyebrow{font-size:10px;letter-spacing:2px;color:#9bbba7}h1{font-size:clamp(20px,3vw,32px);margin:2px 0;letter-spacing:-1px}h1 span{color:#b3ff83}.stats{display:flex;align-items:center;gap:10px}.player-stat{background:#1e2b23;border:1px solid #3e5846;border-radius:13px;padding:7px 12px;font-size:12px;max-width:180px}.player-stat b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color)}.player-stat.out{opacity:.6}.enemy-stat{font-size:12px;color:#a9c3b2}.enemy-stat strong{color:#ffc568}.leaderboard{background:#17241b;border:1px solid #34503d;border-radius:15px;padding:8px 12px;display:flex;align-items:center;gap:14px}.leaderboard h2{font-size:10px;letter-spacing:1px;color:#ffc568;white-space:nowrap;margin:0}.leaderboard ol{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));flex:1;gap:6px;padding:0;margin:0;list-style:none;min-width:0}.leaderboard li{display:flex;align-items:center;gap:5px;min-width:0;font-size:12px;padding:6px;background:#24342a;border-radius:9px}.dot{width:8px;height:8px;flex-shrink:0;background:var(--snake-color);border-radius:50%}.rank{color:#ffc568}.snake-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.leaderboard strong{margin-left:auto}.stage{min-height:0;display:grid;place-items:center;position:relative}.arena{position:relative;width:100%;height:100%;display:grid;place-items:center;min-height:0}canvas{display:block;background:black;border:2px solid #b3ff83;border-radius:18px;box-shadow:0 0 28px #b3ff8315;touch-action:none;outline:none}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#09110bd9;border-radius:18px;padding:10px}.card{width:min(510px,100%);text-align:center;background:#18271e;border:2px solid #3f6249;border-radius:24px;padding:20px;box-shadow:0 12px 30px #0006}.badge{font-size:11px;letter-spacing:2px;color:#ffc568}h2{font-size:clamp(22px,4vw,36px);margin:8px 0;color:#b3ff83}.card p{font-size:13px;color:#c2d7c9;line-height:1.45;margin:8px 0}.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin:12px 0}.setup-grid .wide{grid-column:1/-1}label{font-size:12px;color:#c8e4d0;display:block}input,select{display:block;width:100%;min-width:0;margin-top:4px;padding:10px;border:1px solid #65846c;border-radius:10px;background:#0e1912;color:#fff}input::placeholder{color:#859d8c}.actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px}.controls{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#b4cbbd}.controls p{margin:0}.controls a{color:#b3ff83}kbd{color:white;background:#2c4132;padding:3px 5px;border-radius:5px;font:inherit}.result{white-space:pre-line}.error{color:#ffc568!important} @media(max-width:650px){.app{padding:8px;gap:7px}header{flex-wrap:wrap;gap:5px}.stats{width:100%;justify-content:space-between;gap:5px}.player-stat{padding:5px 8px;font-size:11px;flex:1;max-width:160px}.leaderboard{display:block;padding:7px}.leaderboard h2{margin-bottom:5px}.leaderboard li{font-size:10px;padding:5px;gap:3px}.dot{display:none}.controls{font-size:10px}.card{padding:12px}.card p{font-size:12px}.setup-grid{margin:8px 0;gap:7px}}@media(max-height:570px){.app{padding:6px 12px;gap:5px}header h1{font-size:20px}.eyebrow{display:none}.player-stat{padding:3px 8px}.leaderboard{padding:5px 8px}.card{padding:10px;max-width:650px}h2{font-size:22px;margin:4px 0}.card p{font-size:11px;margin:4px 0}.setup-grid{grid-template-columns:1fr 1fr 1fr;margin:6px 0;gap:8px}.setup-grid .wide{grid-column:auto}input,select{padding:5px;margin-top:2px}.actions{margin-top:6px}button{padding:6px 14px;min-height:34px}.badge{display:none}.controls{font-size:10px}} 
+.stats{flex-wrap:wrap}.room-panel{position:fixed;inset:5vh max(12px,calc((100vw - 560px)/2));z-index:10;overflow:auto;background:#18271e;border:2px solid #b3ff83;border-radius:20px;padding:20px;box-shadow:0 0 0 100vmax #000b}.room-panel textarea{width:100%;height:70px;background:#0e1912;color:white;border:1px solid #65846c;border-radius:8px;resize:vertical;font:12px monospace}.room-panel p{font-size:13px;line-height:1.4}.room-panel h2{font-size:24px}button:disabled{opacity:.5;cursor:default}.spawn-notice{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:2;padding:10px 18px;border:1px solid #b3ff83;border-radius:30px;background:#18271eee;color:#b3ff83;font-size:13px;text-align:center;pointer-events:none;max-width:90%}.controls{flex-wrap:wrap}</style><style>/* Fit the game to the visible viewport, including phone notches and toolbars. */
+html{height:100%;overscroll-behavior:none}
+body{height:100svh;height:100dvh}
+.app{min-width:0;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+.app>*{min-width:0}
+.stage,.arena{overflow:hidden}
+.overlay{min-height:0;overflow:hidden}
+.overlay .card{max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.room-panel{max-height:calc(100dvh - 24px);overscroll-behavior:contain;overflow-x:hidden;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.room-panel input,.room-panel select,.room-panel textarea{max-width:100%}
+#powerButtons{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.touch-steering{display:none}
+@media(max-width:900px),(pointer:coarse){
+ button,.play-link{min-height:44px}
+ input,select,textarea{font-size:16px}
+ .app{gap:6px}
+ header{flex-wrap:wrap;gap:5px}
+ header .brand{flex-shrink:0}
+ header h1{font-size:21px}
+ header .eyebrow{display:none}
+ .stats{width:100%;gap:5px;justify-content:flex-start}
+ .stats button{padding:6px 10px;font-size:12px}
+ .stats .player-stat{flex:1;max-width:none;min-width:70px;padding:5px 7px;font-size:10px}
+ .stats .enemy-stat{font-size:10px}
+ .stats .enemy-stat[title],.stats .enemy-stat:has(#pearlCount){display:none}
+ .leaderboard{display:flex;gap:8px;padding:6px 8px}
+ .leaderboard h2{font-size:9px;max-width:100px;overflow:hidden}
+ .leaderboard #highScore{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px}
+ .leaderboard ol{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .leaderboard li{font-size:10px;padding:5px 4px}
+ .leaderboard li:nth-child(n+4){display:none}
+ .leaderboard .dot{display:none}
+ .controls{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px}
+ .controls>p,.controls>a{display:none}
+ .touch-steering{display:flex;gap:6px;grid-column:1;grid-row:1}
+ .touch-pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:3px}
+ .touch-pad button{padding:0;font-size:22px;border-radius:12px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+ .touch-pad button[data-direction="up"]{grid-column:2}
+ .touch-pad button[data-direction="left"]{grid-column:1;grid-row:2}
+ .touch-pad button[data-direction="down"]{grid-column:2;grid-row:2}
+ .touch-pad button[data-direction="right"]{grid-column:3;grid-row:2}
+ .controls .power-controls{grid-column:2;grid-row:1;gap:5px;align-content:center}
+ .controls .power-controls button{min-height:44px;font-size:11px;padding:6px 8px;overflow-wrap:anywhere}
+ .controls #powerButtons{gap:5px}
+ .controls.two-touch{grid-template-columns:1fr}
+ .controls.two-touch .touch-steering{grid-column:1;justify-content:space-between}
+ .controls.two-touch .power-controls{grid-column:1;grid-row:2}
+ .card{border-radius:16px;padding:12px}
+ .card .badge{display:none}
+ .card h2{font-size:24px}
+ .card p{font-size:12px}
+ .setup-grid{grid-template-columns:1fr 1fr;gap:8px}
+ .setup-grid .wide{grid-column:1/-1}
+ .room-panel{inset:10px max(8px,env(safe-area-inset-right)) 10px max(8px,env(safe-area-inset-left));padding:14px;border-radius:16px}
+ .room-panel .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .room-panel .shop-item{min-width:0;padding:10px}
+ .room-panel .shop-item button{min-height:44px;white-space:normal}
+ .room-panel #closeShop{position:sticky;bottom:0;box-shadow:0 0 0 5px #18271e}
+}
+@media(max-height:500px) and (orientation:landscape){
+ .app{gap:4px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:max(4px,env(safe-area-inset-bottom));grid-template-rows:auto minmax(0,1fr) auto}
+ header{flex-wrap:nowrap;gap:8px}
+ header h1{font-size:17px;white-space:nowrap}
+ .stats{width:auto;flex:1;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;justify-content:flex-end}
+ .stats .enemy-stat:has(#enemies),.stats .enemy-stat:has(#coverage){display:none}
+ .stats .player-stat{flex:0 1 120px;min-width:85px}
+ .stats button{flex-shrink:0}
+ .leaderboard{display:none}
+ .controls{grid-template-columns:auto minmax(0,1fr)}
+ .controls .power-controls{flex-wrap:nowrap}
+ .controls #powerButtons{flex-wrap:nowrap}
+ .touch-pad{grid-template-columns:repeat(4,44px);grid-template-rows:44px;gap:4px}
+ .touch-pad button[data-direction]{grid-column:auto;grid-row:1}
+ .overlay .card{max-width:560px}
+ .card p{margin:5px 0}
+ .setup-grid{grid-template-columns:1fr 1fr 1fr;margin:6px 0}
+ .setup-grid .wide{grid-column:auto}
+}
+</style></head><body><main class="app">
+<header><a class="brand" href="index.html"><div class="eyebrow">MY ARCADE / LET'S PLAY!</div><h1>Snake <span>Arena</span> &#9733;</h1></a><div class="stats"><button id="onlineButton">Play Online</button><div class="enemy-stat">XP <strong id="xp">0</strong></div><div id="playerStats" style="display:contents"></div><div class="enemy-stat">Rivals <strong id="enemies">15</strong></div><div class="enemy-stat" title="Shared by both players">Next respawn <strong id="respawnProgress">0/2</strong> eaten</div><div class="enemy-stat">Pearls <strong id="pearlCount">300</strong></div><div class="enemy-stat">Explored <strong id="coverage">0%</strong></div><button id="pause" disabled>Pause</button></div></header>
+<aside class="leaderboard" aria-label="Live top five snakes"><h2>&#9819; TOP FIVE<br><span id="highScore" style="display:block;margin-top:5px;letter-spacing:0;color:#c2d7c9">Best: 0 pearls</span></h2><ol id="leaders"></ol></aside>
+<section class="stage"><div class="arena" id="arena"><canvas id="game" width="1000" height="640" tabindex="0" aria-label="Snake Arena. Single player: WASD, arrows, or pointer. Two players: WASD and arrows."></canvas>
+<div id="spawnNotice" role="status" aria-live="polite" class="spawn-notice" hidden></div><div id="overlay" class="overlay"><div class="card"><div class="badge">LITTLE SNAKES. BIG ADVENTURES.</div><h2 id="heading">Ready, set, gobble!</h2><p id="message">Eat pearls and smaller rivals to grow longer and thicker. Watch out: up to two rivals will chase smaller players! Every two rivals you eat bring 1-3 new snakes somewhere else. Explore the whole arena to win! You start at size 1. Rivals also start at size 1 and move slower than you.</p>
+<form id="setup"><div class="setup-grid"><label class="wide">How many players?<select id="mode"><option value="1">Single Player</option><option value="2">Two Players (team up!)</option></select></label><label>Your name / Player 1<input id="name1" required maxlength="16" placeholder="Your name" autocomplete="off"></label><label id="secondName" hidden>Player 2's name<input id="name2" maxlength="16" placeholder="Friend's name" autocomplete="off"></label></div><p id="setupHelp">Use WASD, arrows, or your mouse, trackpad, or touch.</p><p id="error" class="error" role="alert" hidden>Please enter a name for each player.</p><button class="primary" type="submit">Let's play! &#8594;</button></form>
+<p id="details" class="result" hidden></p><div id="gameActions" class="actions" hidden><button id="revive" class="primary" hidden>Revive: 5 XP</button><button id="skipRevive" hidden>Skip</button><button id="start" class="primary">Play Again</button><button id="restart">Change Players</button></div></div></div></div></section>
+<div class="controls"><p id="controlHint"><kbd>WASD</kbd> / <kbd>Arrows</kbd> or pointer</p><p>P = pause &middot; Blue = 5 pearls &middot; Purple = 10 &middot; King = +5 XP</p><a href="index.html">Arcade home</a></div>
+</main>
+<section id="roomPanel" class="room-panel" aria-label="Online room" hidden>
+<h2>Play with a friend</h2><p>Host a game, share your five-character code, and wait for your friend to join.</p>
+<label>Your name<input id="onlineName" maxlength="16" placeholder="Your name" autocomplete="nickname"></label>
+<div class="actions"><button id="hostRoom" class="primary">Host Game</button></div>
+<div id="joinFields"><label>Room code<input id="roomCode" maxlength="5" minlength="5" placeholder="ABCDE" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:5px"></label><div class="actions"><button id="joinRoom">Join Game</button></div></div>
+<div id="roomDisplay" hidden><p>Your room code</p><p id="hostCode" style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#b3ff83"></p><button id="copyCode">Copy code</button></div>
+<p id="roomStatus" role="status" aria-live="polite">Host a game or enter your friend's code.</p>
+<div class="actions"><button id="beginOnline" class="primary" hidden disabled>Start Game</button><button id="leaveRoom">Back to local game</button></div>
+<p>Two players per room. The host starts the game once their friend joins. Keep the host's tab open.</p>
+</section><script>
+/* Firebase rooms: host a game or join with a five-character code. */
+'use strict';
+function createOnlineSession(){
+ const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+ let room='',slot='p1',other='p2',sdk,db,mine,foodRef,roomRef,remote=null,food=null;
+ let connected=false,ready=false,error='',generation=0,unsub=[],consumed=null,rotating=false,lastAlive=null,loading=null,busy=false,lastRound=null;
+ const owner=crypto.randomUUID();
+ const el=id=>document.getElementById(id);
+ const api={role:null,firebase:false,init,host,join,begin,leave,restart(){if(slot==='p1')begin();},tick(){if(api.firebase&&player&&player.alive!==lastAlive){lastAlive=player.alive;publish();}},key(){return false;},pointer(){},action(){},reset:resetOnline,afterStep,replenish:()=>{pearls=food&&food.id!==consumed?[food]:[];},eat};
+ const status=document.createElement('span');status.className='enemy-stat';status.setAttribute('role','status');status.hidden=true;
+ function report(){
+  const message=error||(!connected?'Connecting...':remote?'Player '+(other==='p1'?'1':'2')+' joined!':slot==='p1'?'Waiting for Player 2...':'Waiting for the host to start...');
+  status.textContent='Room: '+room+' | You are Player '+(slot==='p1'?'1':'2')+' | '+message;
+  el('roomStatus').textContent=api.firebase?'Room: '+room+' | '+message:error||'Host a game or enter your friend\'s code.';
+  el('beginOnline').hidden=!api.firebase||slot!=='p1';el('beginOnline').disabled=!ready||!remote;
+ }
+ function fail(e){error=e?.message||String(e);report();}
+ function validPoint(p){return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.y>=0&&p.x<=CONFIG.width&&p.y<=CONFIG.height;}
+ function receive(snapshot){
+  const value=snapshot.val();snakes=snakes.filter(s=>!s.remote);remote=null;
+  if(value&&Array.isArray(value.body)&&value.body.length&&value.body.every(validPoint)&&Number.isFinite(value.score)){
+   remote={...value,...value.body[0],parts:value.body,trail:value.body,isPlayer:true,remote:true,color:slot==='p1'?'#fd75aa':'#b3ff83',name:typeof value.name==='string'?value.name.slice(0,16):'Friend',size:value.body.length,alive:value.alive===true,angle:Number.isFinite(value.angle)?value.angle:0};snakes.push(remote);
+   if(slot==='p1'&&value.consumedFood&&food?.id===value.consumedFood)spawnFood(food.id);
+  }
+  report();
+ }
+ async function spawnFood(expected){
+  if(!ready||slot!=='p1'||rotating)return;rotating=true;const token=generation;
+  try{
+   let point;for(let n=0;n<100;n++){point={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56)};if(!snakes.some(s=>s.alive&&s.parts.some(p=>distance(p,point)<snakeRadius(s)+16)))break;}
+   const next={...point,hue:60,id:crypto.randomUUID()};
+   await sdk.runTransaction(foodRef,current=>{if(token!==generation||!api.firebase)return;if(expected===null?current!==null:current?.id!==expected)return;return next;},{applyLocally:false});
+  }catch(e){fail(e);}finally{rotating=false;}
+ }
+ function publish(){
+  if(!ready||!connected||!player||!api.firebase)return;
+  sdk.set(mine,{owner,body:player.parts.map(p=>({x:p.x,y:p.y})),score:player.score,name:player.name,alive:player.alive,angle:player.angle,consumedFood:consumed||null}).catch(fail);
+ }
+ function resetOnline(){
+  if(!api.firebase)return;
+  player.x=slot==='p1'?850:1150;player.y=640;player.color=slot==='p1'?'#b3ff83':'#fd75aa';
+  player.trail=Array.from({length:40},(_,i)=>({x:player.x,y:player.y+i*2}));body(player);
+  if(remote&&!snakes.includes(remote))snakes.push(remote);api.replenish();publish();
+ }
+ function eat(s){
+  if(s!==player||!ready||!connected||!food||food.id===consumed)return;
+  consumed=food.id;s.size+=CONFIG.pearlGrowth;s.score++;body(s);api.replenish();publish();if(slot==='p1')spawnFood(consumed);
+ }
+ function afterStep(){
+  if(!api.firebase)return false;
+  if(player.alive&&remote?.alive&&remote.parts.some(p=>distance(player,p)<=snakeRadius(player)+snakeRadius(remote))){player.alive=false;publish();updateHUD();finish(false,'Your head hit the other snake!');return true;}
+  publish();return false;
+ }
+ async function load(){
+  if(!loading)loading=(async()=>{
+   const [app,database]=await Promise.all([import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js')]);
+   sdk=database;db=sdk.getDatabase(app.initializeApp({apiKey:'AIzaSyD75nl373k0a5Ppnng4_T524_Ki0WFQgyk',authDomain:'fun-fun-142e6.firebaseapp.com',databaseURL:'https://fun-fun-142e6-default-rtdb.firebaseio.com',projectId:'fun-fun-142e6',storageBucket:'fun-fun-142e6.firebasestorage.app',messagingSenderId:'393813989535',appId:'1:393813989535:web:cd16f395c312343a332aaa'}));
+  })().catch(e=>{loading=null;throw e;});return loading;
+ }
+ function setBusy(value){busy=value;el('hostRoom').disabled=el('joinRoom').disabled=value||api.firebase;el('leaveRoom').disabled=value;}
+ function makeCode(){const bytes=crypto.getRandomValues(new Uint8Array(5));return Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');}
+ async function host(){
+  if(busy||api.firebase)return;setBusy(true);error='';el('roomStatus').textContent='Creating your room...';
+  try{
+   await load();let claimed=false;
+   for(let attempt=0;attempt<10&&!claimed;attempt++){
+    room=makeCode();roomRef=sdk.ref(db,'rooms/'+room);
+    const result=await sdk.runTransaction(roomRef,current=>current===null?{p1:{owner},createdAt:Date.now()}:undefined,{applyLocally:false});claimed=result.committed;
+   }
+   if(!claimed)throw new Error('Could not create a room. Please try again.');
+   slot='p1';other='p2';await connect();
+  }catch(e){fail(e);}finally{setBusy(false);}
+ }
+ async function join(){
+  if(busy||api.firebase)return;const code=el('roomCode').value.trim().toUpperCase();
+  if(!/^[A-Z0-9]{5}$/.test(code)){fail(new Error('Enter the five-character code from your friend.'));return;}
+  setBusy(true);error='';el('roomStatus').textContent='Joining room...';
+  try{
+   await load();const candidate=sdk.ref(db,'rooms/'+code);let reason='Room not found. Check the code.';
+   const result=await sdk.runTransaction(candidate,current=>{
+    if(!current?.p1)return;
+    if(current.p2){reason='This room is full. Only two players can join.';return;}
+    if(current.round){reason='This game has already started.';return;}
+    return {...current,p2:{owner}};
+   },{applyLocally:false});
+   if(!result.committed)throw new Error(reason);
+   room=code;roomRef=candidate;slot='p2';other='p1';await connect();
+  }catch(e){fail(e);}finally{setBusy(false);}
+ }
+ async function connect(){
+  const token=++generation;api.firebase=true;api.role='host';status.hidden=false;lastRound=null;error='';
+  mine=sdk.ref(db,'rooms/'+room+'/'+slot);foodRef=sdk.ref(db,'rooms/'+room+'/food');
+  mode=1;names=[el('onlineName').value.trim().slice(0,16)|| (slot==='p1'?'Host':'Player 2')];ui.mode.value='1';ui.mode.disabled=true;ui.name1.value=names[0];ui.secondName.hidden=true;ui.name2.required=false;
+  state='ready';reset();el('onlineButton').textContent='Online Room';el('roomDisplay').hidden=false;el('hostCode').textContent=room;el('joinFields').hidden=true;report();
+  unsub.push(sdk.onValue(sdk.ref(db,'rooms/'+room+'/'+other),receive,fail));
+  unsub.push(sdk.onValue(foodRef,snapshot=>{
+   const value=snapshot.val();food=value&&validPoint(value)&&typeof value.id==='string'?value:null;api.replenish();
+   if(slot==='p1'){if(!value)spawnFood(null);else if(value.id===consumed||value.id===remote?.consumedFood)spawnFood(value.id);}
+  },fail));
+  unsub.push(sdk.onValue(roomRef,snapshot=>{
+   const value=snapshot.val();if(!value?.p1){leave(false);el('roomPanel').hidden=false;fail(new Error('The host closed the room. Host or join another game.'));return;}
+   if(value.round&&value.round!==lastRound){lastRound=value.round;consumed=null;start();el('roomPanel').hidden=true;}
+  },fail));
+  unsub.push(sdk.onValue(sdk.ref(db,'.info/connected'),async snapshot=>{
+   connected=false;ready=false;report();if(!snapshot.val())return;
+   try{
+    await sdk.onDisconnect(slot==='p1'?roomRef:mine).remove();if(token!==generation)return;
+    connected=true;ready=true;report();publish();if(slot==='p1'&&!food)spawnFood(null);
+   }catch(e){fail(e);}
+  },fail));
+ }
+ async function begin(){
+  if(!api.firebase||slot!=='p1'||!ready||!remote)return;
+  try{await sdk.set(sdk.ref(db,'rooms/'+room+'/round'),crypto.randomUUID());}catch(e){fail(e);}
+ }
+ function leave(remove=true){
+  generation++;unsub.forEach(stop=>stop());unsub=[];
+  if(remove&&mine&&sdk){const target=slot==='p1'?roomRef:mine;sdk.remove(target).then(()=>sdk.onDisconnect(target).cancel()).catch(fail);}
+  ready=connected=false;api.firebase=false;api.role=null;remote=food=null;consumed=null;lastRound=null;status.hidden=true;
+  el('onlineButton').textContent='Play Online';el('roomPanel').hidden=true;el('roomDisplay').hidden=true;el('joinFields').hidden=false;el('beginOnline').hidden=true;error='';
+  ui.mode.disabled=false;mode=1;reset();setupScreen();setBusy(false);
+ }
+ function init(){
+  document.querySelector('.stats').append(status);
+  el('onlineButton').onclick=()=>{if(state==='playing')pause();el('roomPanel').hidden=false;report();};
+  el('hostRoom').onclick=host;el('joinRoom').onclick=join;el('beginOnline').onclick=begin;el('leaveRoom').onclick=()=>api.firebase?leave():el('roomPanel').hidden=true;
+  el('roomCode').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);});
+  el('roomCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();join();}});
+  el('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(room);el('roomStatus').textContent='Code copied! Send '+room+' to your friend.';}catch{el('roomStatus').textContent='Your room code is '+room+'.';}};
+ }
+ return api;
+}
+
+</script><script>
+'use strict'; const net=createOnlineSession();
+// All distances use a stable logical arena, independent of screen size.
+const CONFIG={width:2000,height:1280,enemies:15,respawnEvery:2,batchMin:1,batchMax:3,spawnClearance:140,spawnAttempts:100,pearls:300,speed:87,rivalSpeed:60,playerStartSize:1,rivalStartMax:1,huntDelay:8,huntRange:420,maxHunters:2,radiusGrowth:.45,radius:8,spacing:12,turnRate:3.8,pearlGrowth:1,pearlRadius:8,colors:['#b3ff83','#fd75aa','#67c7ff','#ffc568','#b79aff','#5be0ca','#ff8057','#e8f45a','#dd6cff','#42e3a8','#ff5d77','#8bb8ff','#ffd066','#b3f4ff','#ff9bd2']};
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
+const ui=Object.fromEntries(['spawnNotice','respawnProgress','enemies','pearlCount','coverage','pause','overlay','heading','message','details','start','restart','setup','mode','name1','name2','secondName','setupHelp','gameActions','playerStats','error','controlHint','highScore','xp','revive','skipRevive'].map(id=>[id,document.getElementById(id)]));
+const XP_KEY='myArcade.snakeArena.xp';
+let xp=0,lastKing=null,reviveQueue=[],reviveDeadline=0,deathReason='';
+try{const saved=Number(localStorage.getItem(XP_KEY));if(Number.isSafeInteger(saved)&&saved>=0)xp=saved;}catch{}
+function saveXP(){if(net.role==='guest')return;ui.xp.textContent=xp;try{localStorage.setItem(XP_KEY,String(xp));}catch{}}
+function awardKing(){const king=ranking()[0];if(king!==lastKing){if(king?.isPlayer){xp+=5;saveXP();}lastKing=king;}}
+function clearRevive(){reviveQueue=[];ui.revive.hidden=true;ui.skipRevive.hidden=true;ui.start.hidden=false;ui.restart.hidden=false;}
+function nextRevive(){
+ if(!reviveQueue.length){clearRevive();if(!players.some(p=>p.alive))finish(false,deathReason);else play();return;}
+ state='reviving';ui.pause.disabled=true;reviveDeadline=performance.now()+5000;
+ show('Another chance?',reviveQueue[0].name+' can keep the same length for 5 XP.','Play Again');
+ ui.start.hidden=true;ui.restart.hidden=true;ui.skipRevive.hidden=false;ui.revive.hidden=false;ui.revive.disabled=xp<5;
+ ui.details.textContent='Shared wallet: '+xp+' XP. Become king to earn 5 XP!';ui.revive.focus({preventScroll:true});
+}
+function revivePlayer(){
+ if(state!=='reviving')return;
+ if(performance.now()>=reviveDeadline){skipRevive();return;}
+ if(xp<5)return;
+ const p=reviveQueue.shift();xp-=5;saveXP();
+ // Coil the full body inside the arena, even for very long snakes.
+ let best={x:CONFIG.width/2,y:CONFIG.height/2},clearance=-Infinity;
+ for(let y=100;y<=CONFIG.height-100;y+=100)for(let x=100;x<=CONFIG.width-100;x+=100){let nearest=Infinity;for(const other of snakes)if(other.alive)for(const part of other.parts)nearest=Math.min(nearest,Math.hypot(x-part.x,y-part.y));if(nearest>clearance){clearance=nearest;best={x,y};}}
+ p.x=best.x;p.y=best.y;p.angle=0;p.target=0;p.goal=0;p.trailRemainder=0;
+ p.trail=Array.from({length:Math.ceil(p.size*CONFIG.spacing/2)+30},(_,i)=>({x:best.x+35*(Math.cos(i/17.5)-1),y:best.y+35*Math.sin(i/17.5)}));
+ p.alive=true;p.shield=5;pointer=null;body(p);updateHUD();nextRevive();
+}
+function skipRevive(){if(state!=='reviving')return;reviveQueue.shift();nextRevive();}
+const HIGH_SCORE_KEY='myArcade.snakeArena.highScore';
+let highScore={score:0,name:''};
+try{const saved=JSON.parse(localStorage.getItem(HIGH_SCORE_KEY));if(saved&&Number.isSafeInteger(saved.score)&&saved.score>=0&&typeof saved.name==='string')highScore={score:saved.score,name:saved.name.slice(0,16)};}catch{}
+function updateHighScore(){if(net.role==='guest')return;for(const s of players){if(s.score>highScore.score){highScore={score:s.score,name:s.name};try{localStorage.setItem(HIGH_SCORE_KEY,JSON.stringify(highScore));}catch{}}}ui.highScore.textContent='Best: '+highScore.score+' pearls'+(highScore.name?' / '+highScore.name:'');}
+const COVERAGE_CELL=80,COVERAGE_COLUMNS=Math.ceil(CONFIG.width/COVERAGE_CELL),COVERAGE_ROWS=Math.ceil(CONFIG.height/COVERAGE_CELL),COVERAGE_TOTAL=COVERAGE_COLUMNS*COVERAGE_ROWS;let coverageMap=new Uint8Array(COVERAGE_TOTAL),coveredTiles=0,cameraX=0,cameraY=0,rivalSerial=0;let players=[],mode=1,names=['Player 1','Player 2'];
+let state='ready',snakes=[],pearls=[],player,score=0,kills=0,elapsed=0,targetAngle=0,pointer=null,accumulator=0,lastTime=0;
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+function makeSnake(x,y,size,color,angle,isPlayer=false){const trail=[];for(let d=0;d<=size*CONFIG.spacing+40;d+=2)trail.push({x:x-Math.cos(angle)*d,y:y-Math.sin(angle)*d});return{x,y,size,color,angle,isPlayer,alive:true,trail,parts:[],think:0,goal:angle};}
+function snakeRadius(s){return Math.sqrt(CONFIG.radius**2+CONFIG.radiusGrowth*(s.size-1));}
+function body(s){s.parts=[{x:s.x,y:s.y}];for(let i=1;i<s.size;i++)s.parts.push(s.trail[Math.min(s.trail.length-1,i*CONFIG.spacing/2)]);}
+function markCoverage(s){
+ const radius=snakeRadius(s);
+ for(const part of s.parts){
+  const minCol=Math.max(0,Math.floor((part.x-radius)/COVERAGE_CELL)),maxCol=Math.min(COVERAGE_COLUMNS-1,Math.floor((part.x+radius)/COVERAGE_CELL));
+  const minRow=Math.max(0,Math.floor((part.y-radius)/COVERAGE_CELL)),maxRow=Math.min(COVERAGE_ROWS-1,Math.floor((part.y+radius)/COVERAGE_CELL));
+  for(let row=minRow;row<=maxRow;row++)for(let col=minCol;col<=maxCol;col++){
+   const index=row*COVERAGE_COLUMNS+col;if(coverageMap[index])continue;
+   const x=Math.max(col*COVERAGE_CELL,Math.min((col+1)*COVERAGE_CELL,part.x)),y=Math.max(row*COVERAGE_CELL,Math.min((row+1)*COVERAGE_CELL,part.y));
+   if(Math.hypot(part.x-x,part.y-y)<=radius){coverageMap[index]=1;coveredTiles++;}
+  }
+ }
+}
+const RIVAL_NAMES=['Bubbles','Sprinkles','Noodle','Pickles','Ziggy','Mochi','Waffles','Pippin','Tofu','Pebbles','Pancake','Doodle','Mango','Pudding','Biscuit'];
+let respawnProgress=0,pendingSpawns=[],pairLocations=[],lastConsumed=null,noticeUntil=0,nextSpawnRetry=0;
+function recordRivalEat(small){
+ const location={x:small.x,y:small.y};
+ lastConsumed=location;pairLocations.push(location);respawnProgress++;
+ while(respawnProgress>=CONFIG.respawnEvery){
+  respawnProgress-=CONFIG.respawnEvery;
+  const count=CONFIG.batchMin+Math.floor(Math.random()*(CONFIG.batchMax-CONFIG.batchMin+1));
+  pendingSpawns.push({remaining:count,locations:pairLocations.splice(0,CONFIG.respawnEvery)});
+ }
+}
+function spawnRival(locations){
+ for(let attempt=0;attempt<CONFIG.spawnAttempts;attempt++){
+  const x=40+Math.random()*(CONFIG.width-80),y=40+Math.random()*(CONFIG.height-80);
+  const rival=makeSnake(x,y,1,CONFIG.colors[(rivalSerial+mode)%CONFIG.colors.length],Math.random()*Math.PI*2);
+  body(rival);
+  if(rival.parts.some(p=>p.x<CONFIG.radius||p.y<CONFIG.radius||p.x>CONFIG.width-CONFIG.radius||p.y>CONFIG.height-CONFIG.radius))continue;
+  if(locations.some(p=>distance(rival,p)<CONFIG.spawnClearance))continue;
+  if(snakes.some(other=>other.alive&&other.parts.some(p=>distance(rival,p)<CONFIG.spawnClearance)))continue;
+  const index=rivalSerial++;
+  rival.id='rival-'+index;
+  rival.name=RIVAL_NAMES[index%RIVAL_NAMES.length]+(index>=RIVAL_NAMES.length?' '+(Math.floor(index/RIVAL_NAMES.length)+1):'');
+  snakes.push(rival);return true;
+ }
+ return false;
+}
+function processSpawns(){
+ if(state!=='playing'||net.role==='guest')return;
+ if(!snakes.some(s=>s.alive&&!s.isPlayer)&&!pendingSpawns.length)
+  pendingSpawns.push({remaining:1,locations:lastConsumed?[lastConsumed]:[],recovery:true});
+ if(elapsed<nextSpawnRetry)return;
+ nextSpawnRetry=elapsed+.15;
+ let placed=0;
+ for(const batch of pendingSpawns){
+  const attempts=batch.remaining;
+  for(let i=0;i<attempts;i++)if(spawnRival(batch.locations)){batch.remaining--;placed++;}
+ }
+ pendingSpawns=pendingSpawns.filter(batch=>batch.remaining>0);
+ if(placed){ui.spawnNotice.textContent=placed+' new rival'+(placed===1?'':'s')+' appeared!';noticeUntil=elapsed+3;ui.spawnNotice.hidden=false;}
+}
+function replenish(){if(net.firebase){net.replenish();return;}let attempts=0;while(pearls.filter(p=>pearlValue(p)===1).length<CONFIG.pearls&&attempts++<CONFIG.pearls*10){const p={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56),hue:Math.random()*70+35};if(snakes.some(s=>s.alive&&s.parts.some(b=>distance(b,p)<snakeRadius(s)+12))||pearls.some(q=>distance(p,q)<18))continue;pearls.push(p);}replenishSpecials();}
+function reset(){respawnProgress=0;pendingSpawns=[];pairLocations=[];lastConsumed=null;noticeUntil=0;nextSpawnRetry=0;ui.spawnNotice.hidden=true;clearRevive();lastKing=null;score=0;kills=0;elapsed=0;coverageMap.fill(0);coveredTiles=0;cameraX=0;cameraY=0;rivalSerial=CONFIG.enemies;pointer=null;targetAngle=-Math.PI/2;snakes=[];pearls=[];players=[];for(let i=0;i<mode;i++){const s=makeSnake(mode===1?1000:(i===0?850:1150),640,CONFIG.playerStartSize,CONFIG.colors[i],-Math.PI/2,true);Object.assign(s,{name:names[i],target:-Math.PI/2,score:0,kills:0});players.push(s);snakes.push(s);}player=players[0];const starts=[[580,400],[790,400],[1000,400],[1210,400],[1420,400],[580,640],[790,640],[1210,640],[1420,640],[580,880],[790,880],[1000,880],[1210,880],[1420,880],[1000,340]];const enemyNames=['Bubbles','Sprinkles','Noodle','Pickles','Ziggy','Mochi','Waffles','Pippin','Tofu','Pebbles','Pancake','Doodle','Mango','Pudding','Biscuit'];for(let i=0;i<CONFIG.enemies;i++){const p=starts[i%starts.length];const s=makeSnake(p[0]+(Math.random()-.5)*30,p[1]+(Math.random()-.5)*30,(i%CONFIG.rivalStartMax)+1,CONFIG.colors[(i+mode)%CONFIG.colors.length],Math.PI/2);s.name=enemyNames[i];s.id="rival-"+i;snakes.push(s);}snakes.forEach(body);resetPowers();replenish();if(net.firebase)net.reset();updateHUD();}
+function ranking(){return snakes.filter(s=>s.alive).sort((a,b)=>b.size-a.size||snakes.indexOf(a)-snakes.indexOf(b));}
+let leaderboardHTML='';
+function escapeHTML(text){return text.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function updateHUD(){ui.respawnProgress.textContent=respawnProgress+"/"+CONFIG.respawnEvery;ui.spawnNotice.hidden=elapsed>=noticeUntil;ui.xp.textContent=xp;ui.pearlCount.textContent=pearls.length;ui.coverage.textContent=Math.floor(coveredTiles/COVERAGE_TOTAL*100)+'%';updateHighScore();ui.enemies.textContent=snakes.filter(s=>s.alive&&!s.isPlayer).length;ui.playerStats.innerHTML=players.map((s,i)=>'<div class="player-stat '+(s.alive?'':'out')+'" style="--color:'+s.color+'"><b>'+escapeHTML(s.name)+'</b><span>'+(s.alive?'Size '+s.size:'Out')+' / '+s.score+' pearls</span></div>').join('');const html=ranking().slice(0,5).map((s,i)=>'<li style="--snake-color:'+s.color+'"><span class="rank">'+(i===0?'&#9819;':i+1)+'</span><span class="dot"></span><span class="snake-name">'+escapeHTML(s.name)+'</span><strong>'+s.size+'</strong></li>').join('');if(html!==leaderboardHTML){document.getElementById('leaders').innerHTML=html;leaderboardHTML=html;}}
+function play(){state='playing';ui.overlay.hidden=true;ui.pause.disabled=false;ui.pause.textContent='Pause';accumulator=0;canvas.focus({preventScroll:true});}
+function start(){reset();play();}
+function pause(){if(net.role==='guest'||state!=='playing')return;state='paused';ui.pause.textContent='Resume';show('Snack break!','Your snakes are taking a little rest.','Resume');}
+function show(title,message,button){ui.setup.hidden=true;ui.heading.textContent=title;ui.message.textContent=message;ui.details.hidden=false;ui.details.textContent=state==='paused'?'Press P or Escape to hop back in.':players.map(s=>s.name+': size '+s.size+' / '+s.score+' pearls / '+s.kills+' rivals eaten').join('\n');ui.gameActions.hidden=false;ui.start.textContent=button;ui.overlay.hidden=false;ui.start.focus({preventScroll:true});}
+function finish(won,reason){state=won?'won':'lost';ui.pause.disabled=true;show(won?'Arena explored!':'Game Over — nice try!',won?'You explored every part of the arena! Rival snakes keep coming, so they can never be the win condition.':reason,'Play Again');}
+function setupScreen(){clearRevive();state='ready';pointer=null;ui.pause.disabled=true;ui.setup.hidden=false;ui.details.hidden=true;ui.gameActions.hidden=true;ui.overlay.hidden=false;ui.heading.textContent='Ready, set, gobble!';ui.message.textContent='Eat pearls and smaller rivals to grow longer and thicker. Watch out: up to two rivals will chase smaller players! Every two rivals you eat bring 1-3 new snakes somewhere else. Explore the whole arena to win! You start at size 1. Rivals also start at size 1 and move slower than you.';ui.name1.focus({preventScroll:true});}
+
+function ai(s,dt){s.think-=dt;if(s.think>0)return;s.think=.14;let goal=null,best=Infinity;for(const p of pearls){const d=distance(s,p);if(d<best){best=d;goal=p;}}let threat=null,threatDistance=160;for(const other of snakes){if(!other.alive||other===s||invisible(other)||other.size<=s.size)continue;for(const part of other.parts){const d=distance(s,part);if(d<threatDistance){threatDistance=d;threat=part;}}}if(threat)goal={x:s.x+(s.x-threat.x)*3,y:s.y+(s.y-threat.y)*3};else if(elapsed>CONFIG.huntDelay&&snakes.filter(r=>r.alive&&!r.isPlayer).slice(0,CONFIG.maxHunters).includes(s)){const prey=players.filter(p=>p.alive&&!p.shield&&!invisible(p)&&p.size<s.size&&distance(s,p)<CONFIG.huntRange).sort((a,b)=>distance(s,a)-distance(s,b))[0];if(prey)goal=prey;}
+let dx=goal?goal.x-s.x:Math.cos(s.angle),dy=goal?goal.y-s.y:Math.sin(s.angle);const mag=Math.hypot(dx,dy)||1;dx/=mag;dy/=mag;const margin=Math.max(85,snakeRadius(s)+30);if(s.x<margin)dx+=(margin-s.x)/18;if(s.x>CONFIG.width-margin)dx-=(s.x-CONFIG.width+margin)/18;if(s.y<margin)dy+=(margin-s.y)/18;if(s.y>CONFIG.height-margin)dy-=(s.y-CONFIG.height+margin)/18;s.goal=Math.atan2(dy,dx);}
+function move(s,dt){let desired=s.goal;if(s.isPlayer){if((mode===1||net.role==='host')&&pointer&&distance(s,pointer)>5)s.target=Math.atan2(pointer.y-s.y,pointer.x-s.x);desired=s.target;}else ai(s,dt),desired=s.goal;const delta=angleDelta(desired,s.angle);s.angle+=Math.max(-CONFIG.turnRate*dt,Math.min(CONFIG.turnRate*dt,delta));const old={x:s.x,y:s.y};const speed=(s.isPlayer?CONFIG.speed:CONFIG.rivalSpeed)*(s.boostUntil>elapsed?2:1)*(s.skin==='angel'?1.1:1);s.x+=Math.cos(s.angle)*speed*dt;s.y+=Math.sin(s.angle)*speed*dt;if(!s.isPlayer){const edge=snakeRadius(s)+6;s.x=Math.max(edge,Math.min(CONFIG.width-edge,s.x));s.y=Math.max(edge,Math.min(CONFIG.height-edge,s.y));}const moved=distance(old,s);s.trailRemainder=(s.trailRemainder||0)+moved;while(s.trailRemainder>=2){s.trailRemainder-=2;const fraction=moved?1-s.trailRemainder/moved:1;s.trail.unshift({x:old.x+(s.x-old.x)*fraction,y:old.y+(s.y-old.y)*fraction});}s.trail.length=Math.min(s.trail.length,Math.ceil(s.size*CONFIG.spacing/2)+30);body(s);}
+function touching(a,b){const r=snakeRadius(a)+snakeRadius(b);for(const p of a.parts)for(const q of b.parts)if(Math.abs(p.x-q.x)<r&&Math.abs(p.y-q.y)<r&&distance(p,q)<=r)return true;return false;}
+function step(dt){const aliveBefore=players.filter(p=>p.alive);for(const p of players)p.shield=Math.max(0,(p.shield||0)-dt);elapsed+=dt;for(const s of snakes)if(s.alive&&!s.remote){move(s,dt);if(s.isPlayer)markCoverage(s);}for(const s of snakes){if(!s.alive||(net.firebase&&s!==player))continue;for(let i=pearls.length-1;i>=0;i--)if(distance(s,pearls[i])<=snakeRadius(s)+CONFIG.pearlRadius){eatPearl(s,i);}}
+let reason='Both snakes are out. Collect pearls and try again!';for(const p of players){if(p.alive&&p.parts.some(b=>b.x<=snakeRadius(p)||b.y<=snakeRadius(p)||b.x>=CONFIG.width-snakeRadius(p)||b.y>=CONFIG.height-snakeRadius(p))){p.alive=false;reason=p.name+' bumped the border. Keep your whole snake inside!';}}
+if(net.firebase&&net.afterStep())return;
+for(let i=0;i<snakes.length;i++)for(let j=i+1;j<snakes.length;j++){const a=snakes[i],b=snakes[j];if(a.remote||b.remote||!a.alive||!b.alive||a.shield>0||b.shield>0||(a.isPlayer&&b.isPlayer)||(!empoweredCanEat(a)&&!empoweredCanEat(b)&&a.size===b.size)||!touching(a,b))continue;const empowered=empoweredCanEat(a)?a:empoweredCanEat(b)?b:null;const big=empowered||(a.size>b.size?a:b),small=big===a?b:a;if(empowered&&devilCanEat(empowered))spendDevil(empowered);small.alive=false;big.size+=small.size;if(big.isPlayer&&!small.isPlayer){big.kills++;recordRivalEat(small);}body(big);if(small.isPlayer)reason=small.name+' was gobbled by '+big.name+'. Grow a little more next time!';}
+snakes=snakes.filter(s=>s.alive||s.isPlayer);replenish();awardKing();updateHUD();const died=aliveBefore.filter(p=>!p.alive);if(died.length){deathReason=reason;reviveQueue=died;nextRevive();return;}if(!players.some(p=>p.alive)){finish(false,reason);return;}if(coveredTiles>=COVERAGE_TOTAL){finish(true,'You explored every tile in the arena!');return;}processSpawns();updateHUD();}
+function draw(){const leader=ranking()[0],follow=(net.role==='guest'&&player?.alive?player:players.find(p=>p.alive))||player;cameraX=Math.max(0,Math.min(CONFIG.width-canvas.width,(follow?.x??canvas.width/2)-canvas.width/2));cameraY=Math.max(0,Math.min(CONFIG.height-canvas.height,(follow?.y??canvas.height/2)-canvas.height/2));ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.save();ctx.translate(-cameraX,-cameraY);ctx.strokeStyle='#b3ff83';ctx.lineWidth=6;ctx.strokeRect(3,3,CONFIG.width-6,CONFIG.height-6);for(const p of pearls){ctx.beginPath();ctx.fillStyle=pearlValue(p)===5?'#459bff':pearlValue(p)===10?'#b16aff':`hsl(${p.hue} 85% 78%)`;ctx.arc(p.x,p.y,CONFIG.pearlRadius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffffff22';ctx.beginPath();ctx.arc(p.x,p.y,CONFIG.pearlRadius+4,0,Math.PI*2);ctx.fill();if(pearlValue(p)>1){ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.fillText(pearlValue(p),p.x,p.y+3);}}for(const s of snakes){if(!s.alive)continue;if(invisible(s)&&net.role&&s!==player)continue;ctx.save();if(invisible(s))ctx.globalAlpha=.18;const radius=snakeRadius(s);for(let i=s.parts.length-1;i>=0;i--){const p=s.parts[i];ctx.beginPath();ctx.fillStyle=skinPaint(s,i);ctx.arc(p.x,p.y,radius-(i?1:0),0,Math.PI*2);ctx.fill();drawSkinMark(s,p,i,radius);}ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.angle);ctx.save();ctx.scale(radius/CONFIG.radius,radius/CONFIG.radius);if(s.isPlayer){ctx.strokeStyle=s.shield>0?'#ffc568':'white';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.stroke();}if(s===leader){ctx.fillStyle='#ffd76a';ctx.beginPath();ctx.moveTo(-5,-15);ctx.lineTo(-5,-21);ctx.lineTo(-1,-18);ctx.lineTo(2,-23);ctx.lineTo(5,-18);ctx.lineTo(8,-21);ctx.lineTo(8,-15);ctx.fill();}drawDevil(s);for(const y of [-3.5,3.5]){ctx.fillStyle='white';ctx.beginPath();ctx.arc(3,y,2.7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#142119';ctx.beginPath();ctx.arc(4,y,1.4,0,Math.PI*2);ctx.fill();}ctx.restore();ctx.restore();ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle=s.color;ctx.fillText(s.name+' / '+s.size,s.x,s.y-radius-20);ctx.restore();}ctx.restore();}
+function frame(time){net.tick(time);updateTouchControls();renderPowerButtons();renderShop();if(net.role!=='guest'&&state==='reviving'){const remaining=Math.max(0,Math.ceil((reviveDeadline-performance.now())/1000));ui.revive.textContent='Revive: 5 XP ('+remaining+'s)';if(!remaining)skipRevive();}const dt=Math.min((time-lastTime)/1000||0,.1);lastTime=time;if(state==='playing'&&net.role!=='guest'){accumulator+=dt;while(accumulator>=1/120&&state==='playing'){step(1/120);accumulator-=1/120;}}else accumulator=0;draw();requestAnimationFrame(frame);}
+const directions={w:-Math.PI/2,arrowup:-Math.PI/2,a:Math.PI,arrowleft:Math.PI,s:Math.PI/2,arrowdown:Math.PI/2,d:0,arrowright:0};
+
+document.addEventListener('keydown',e=>{if(net.key(e))return;if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement||e.target instanceof HTMLTextAreaElement)return;const key=e.key.toLowerCase();if(key in directions&&state==='playing'){e.preventDefault();const s=mode===2&&!net.role&&key.startsWith('arrow')?players[1]:players[0];if(s.alive){pointer=null;s.target=directions[key];}}if((key==='p'||key==='escape')&&!e.repeat){if(state==='playing'){e.preventDefault();pause();}else if(state==='paused'){e.preventDefault();play();}}});
+function steer(e){if(net.role==='guest'){net.pointer(e);return;}if(state!=='playing'||(mode!==1&&net.role!=='host')||!player.alive)return;const r=canvas.getBoundingClientRect();pointer={x:(e.clientX-r.left)*canvas.width/r.width+cameraX,y:(e.clientY-r.top)*canvas.height/r.height+cameraY};}
+canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)steer(e);});canvas.addEventListener('pointerdown',e=>{if(state==='playing'&&(mode===1||!!net.role)){canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);steer(e);e.preventDefault();}});function release(){pointer=null;if(player)player.target=player.angle;}canvas.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')release();});canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);
+ui.mode.addEventListener('change',()=>{const two=ui.mode.value==='2';ui.secondName.hidden=!two;ui.name2.required=two;ui.setupHelp.textContent=two?'Team up! Player 1: WASD. Player 2: arrows. You cannot eat each other. Respawn progress is shared.':'Use WASD, arrows, or your mouse, trackpad, or touch.';ui.error.hidden=true;});
+ui.setup.addEventListener('submit',e=>{e.preventDefault();const count=Number(ui.mode.value);const entered=[ui.name1.value.trim(),ui.name2.value.trim()];if(!entered[0]||(count===2&&!entered[1])){ui.error.hidden=false;(entered[0]?ui.name2:ui.name1).focus();return;}mode=count;names=entered;ui.error.hidden=true;ui.setup.hidden=true;ui.controlHint.textContent=mode===2?'Player 1: WASD / Player 2: arrows':'WASD / arrows / pointer / touch';start();});
+ui.revive.addEventListener('click',()=>{if(net.role!=='guest')revivePlayer();});ui.skipRevive.addEventListener('click',()=>{if(net.role!=='guest')skipRevive();});
+ui.start.addEventListener('click',()=>net.role==='guest'?null:state==='paused'?play():net.firebase?net.restart():start());ui.restart.addEventListener('click',()=>net.role?net.leave():setupScreen());ui.pause.addEventListener('click',()=>state==='playing'?pause():state==='paused'?play():null);document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});// Visibility changes and the Pause button control pausing; IDE focus changes do not.
+function fitArena(){const r=document.getElementById('arena').getBoundingClientRect();if(r.width<=0||r.height<=0)return;const compact=matchMedia('(max-width:900px), (pointer:coarse)').matches;const width=compact?(r.width<r.height?640:1000):1000,height=compact?Math.max(240,Math.min(1100,Math.round(width*r.height/r.width))):640;if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}const scale=Math.max(.01,Math.min(r.width/canvas.width,r.height/canvas.height));canvas.style.width=(canvas.width*scale)+'px';canvas.style.height=(canvas.height*scale)+'px';}
+new ResizeObserver(fitArena).observe(document.getElementById('arena'));window.addEventListener('resize',fitArena);
+// Start the self-contained local game.
+</script><script>
+'use strict';
+// The host owns the shared wallet, unlocks, timers, and all gameplay actions.
+const SKINS=[
+ {id:'default',name:'Classic',cost:0,color:'#b3ff83'},
+ ...[['red','#ff5555'],['blue','#459bff'],['purple','#ae65ff'],['pink','#ff79b8'],['orange','#ffa347'],['yellow','#ffee55'],['green','#43d987'],['cyan','#4fe4ee'],['white','#ffffff']].map(([id,color])=>({id,name:id[0].toUpperCase()+id.slice(1),cost:10,color})),
+ {id:'gold',name:'Gold',cost:20,color:'#ffd466'},
+ {id:'silver',name:'Silver',cost:20,color:'#d4dfeb'},
+ {id:'stripes',name:'Tiger stripes',cost:20,color:'#ffab46'},
+ {id:'spots',name:'Polka dots',cost:20,color:'#83edca'},
+ {id:'rainbow',name:'Rainbow',cost:20,color:'#ff79bc'},
+ {id:'invisible',name:'Invisible snake',cost:70,color:'#ff79bc'},
+ {id:'devil',name:'Devil snake',cost:50,color:'#ff4444'},
+ {id:'angel',name:'Angel snake',cost:100,color:'#fff3bd'}
+];
+const SHOP_KEY='myArcade.snakeArena.shop';
+let shopProfile={owned:['default'],equipped:['default','default']};
+try{const saved=JSON.parse(localStorage.getItem(SHOP_KEY));if(saved&&Array.isArray(saved.owned)&&Array.isArray(saved.equipped)){
+ shopProfile.owned=[...new Set(['default',...saved.owned.filter(id=>SKINS.some(s=>s.id===id))])];
+ shopProfile.equipped=[0,1].map(i=>shopProfile.owned.includes(saved.equipped[i])?saved.equipped[i]:'default');
+}}catch{}
+let shopOpen=false,shopPaused=false,shopSignature='',powerSignature='';
+const powerStyle=document.createElement('style');
+powerStyle.textContent='.power-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.power-controls button{font-size:12px;padding:6px 10px}.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.shop-item{border:1px solid #526258;border-radius:12px;padding:12px;background:#21382a}.shop-item b{display:block;margin:7px 0}.skin-swatch{height:18px;border-radius:20px;display:block}.shop-item button{width:100%;font-size:12px;padding:6px}.shop-wallet{color:#ffc568}#skinShop{z-index:12}.power-help{font-size:12px;color:#c2d7c9}';
+document.head.append(powerStyle);
+const powerBar=document.createElement('div');powerBar.className='power-controls';
+powerBar.innerHTML='<button id="shopButton">Shop</button><span id="powerButtons"></span>';
+document.querySelector('.controls').prepend(powerBar);
+const shopPanel=document.createElement('section');shopPanel.id='skinShop';shopPanel.className='room-panel';shopPanel.hidden=true;
+shopPanel.setAttribute('role','dialog');shopPanel.setAttribute('aria-modal','true');shopPanel.setAttribute('aria-label','Snake skin shop');
+shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
+document.body.append(shopPanel);
+const shopEl=id=>document.getElementById(id);
+function saveShop(){if(net.role==='guest')return;try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopProfile));}catch{}}
+function equippedSkin(s){return SKINS.find(k=>k.id===s.skin)||SKINS[0];}
+function applySkin(s,id){s.skin=id;s.color=equippedSkin(s).color;if(id!=='devil')s.devilArmed=false;if(!['invisible','angel'].includes(id))s.invisibleUntil=0;if(id!=='angel')s.angelUntil=0;}
+function resetPowers(){for(let i=0;i<players.length;i++){
+ const s=players[i];Object.assign(s,{angelUntil:0,angelReady:0,boostUntil:0,boostReady:0,invisibleUntil:0,invisibleReady:0,devilUsed:0,devilWindow:0,devilArmed:false});applySkin(s,shopProfile.equipped[i]||'default');
+}shopPanel.hidden=true;shopOpen=false;shopPaused=false;}
+function invisible(s){return s.invisibleUntil>elapsed;}
+function devilRemaining(s){return Math.max(0,5-(s.devilWindow===Math.floor(elapsed/1200)?s.devilUsed||0:0));}
+function usePower(s,action){
+ if(state!=='playing'||!s?.alive)return false;
+ if(action==='boost'&&elapsed>=(s.boostReady||0)){s.boostUntil=elapsed+5;s.boostReady=elapsed+30;return true;}
+ if(action==='invisible'&&['invisible','angel'].includes(s.skin)&&elapsed>=(s.invisibleReady||0)){s.invisibleUntil=elapsed+30;s.invisibleReady=elapsed+60;return true;}
+ if(action==='angel'&&s.skin==='angel'&&elapsed>=(s.angelReady||0)){s.angelUntil=elapsed+10;s.angelReady=elapsed+40;return true;}
+ if(action==='devil'&&s.skin==='devil'&&devilRemaining(s)>0){s.devilArmed=!s.devilArmed;return true;}
+ return false;
+}
+function spendDevil(s){const windowIndex=Math.floor(elapsed/1200);if(s.devilWindow!==windowIndex){s.devilWindow=windowIndex;s.devilUsed=0;}s.devilUsed=(s.devilUsed||0)+1;s.devilArmed=false;}
+function angelCanEat(s){return s.skin==='angel'&&s.angelUntil>elapsed;}
+function empoweredCanEat(s){return angelCanEat(s)||devilCanEat(s);}
+function devilCanEat(s){return s.skin==='devil'&&s.devilArmed&&devilRemaining(s)>0;}
+function purchaseSkin(index,id){
+ if(!Number.isInteger(index)||index<0||index>1)return false;
+ const skin=SKINS.find(k=>k.id===id);if(!skin)return false;
+ if(!shopProfile.owned.includes(id)){if(xp<skin.cost)return false;xp-=skin.cost;shopProfile.owned.push(id);saveXP();}
+ shopProfile.equipped[index]=id;if(players[index])applySkin(players[index],id);saveShop();return true;
+}
+function powerRequest(index,action,id){
+ if(net.role==='guest'){net.action(action,id);return;}
+ if(action==='skin')purchaseSkin(index,id);else usePower(players[index],action);
+ renderShop();renderPowerButtons();
+}
+function renderPowerButtons(){
+ const indices=net.role==='guest'?[1]:net.role==='host'?[0]:players.map((_,i)=>i);
+ const html=indices.map(i=>{const s=players[i];if(!s)return '';const disabled=state!=='playing'||!s.alive;
+ const boost=Math.max(0,Math.ceil((s.boostReady||0)-elapsed));
+ let result='<button data-player="'+i+'" data-power="boost" '+(disabled||boost?'disabled':'')+' aria-label="Speed boost for '+escapeHTML(s.name)+'">↑ '+(players.length>1?escapeHTML(s.name)+' ':'')+(s.boostUntil>elapsed?'Boosting!':boost?boost+'s':'Boost')+'</button>';
+ if(['invisible','angel'].includes(s.skin)){const wait=Math.max(0,Math.ceil((s.invisibleReady||0)-elapsed));result+='<button data-player="'+i+'" data-power="invisible" '+(disabled||wait?'disabled':'')+'>★ '+(invisible(s)?'Invisible '+Math.ceil(s.invisibleUntil-elapsed)+'s':wait?'Wait '+wait+'s':'Invisible')+'</button>';}
+ if(s.skin==='angel'){const wait=Math.max(0,Math.ceil((s.angelReady||0)-elapsed));result+='<button data-player="'+i+'" data-power="angel" '+(disabled||wait?'disabled':'')+'>&#128124; '+(angelCanEat(s)?'Angel Curse '+Math.ceil(s.angelUntil-elapsed)+'s':wait?'Curse wait '+wait+'s':'Angel Curse')+'</button>';}
+ if(s.skin==='devil')result+='<button data-player="'+i+'" data-power="devil" '+(disabled||!devilRemaining(s)?'disabled':'')+'>😈 '+(s.devilArmed?'Bite armed':'Devil bite')+' · '+devilRemaining(s)+'/5</button>';
+ return result;
+ }).join('');if(powerSignature!==html){powerSignature=html;shopEl('powerButtons').innerHTML=html;}
+}
+function renderShop(){
+ if(!shopOpen)return;
+ const index=Number(shopEl('shopPlayer').value)||0;
+ shopEl('shopWallet').textContent='Wallet: '+xp+' XP';
+ const signature=JSON.stringify([index,xp,shopProfile]);if(signature===shopSignature)return;shopSignature=signature;
+ const featured=['angel','invisible','devil'];
+ const shopSkins=[...featured.map(id=>SKINS.find(k=>k.id===id)),...SKINS.filter(k=>!featured.includes(k.id))];
+ shopEl('shopItems').innerHTML=shopSkins.map(k=>{const owned=shopProfile.owned.includes(k.id),active=shopProfile.equipped[index]===k.id;
+ const paint=['rainbow','invisible'].includes(k.id)?'linear-gradient(90deg,red,orange,yellow,lime,cyan,blue,violet)':k.id==='stripes'?'repeating-linear-gradient(90deg,#ffab46 0 12px,#302018 12px 18px)':k.id==='spots'?'radial-gradient(circle,#23392c 25%,transparent 30%) 0 0/14px 14px #83edca':k.color;
+ return '<div class="shop-item"><span class="skin-swatch" style="background:'+paint+'"></span><b>'+k.name+'</b><button data-skin="'+k.id+'" '+(active||!owned&&xp<k.cost?'disabled':'')+'>'+(active?'Equipped':owned?'Equip':xp<k.cost?'Need '+k.cost+' XP ('+(k.cost-xp)+' more)':'Buy · '+k.cost+' XP')+'</button></div>';
+ }).join('');
+}
+shopEl('shopButton').onclick=()=>{
+ shopOpen=true;shopSignature='';shopPaused=!net.role&&state==='playing';if(shopPaused)pause();
+ const indices=net.role==='guest'?[1]:net.role==='host'?[0]:[0,...(mode===2?[1]:[])];
+ shopEl('shopPlayer').innerHTML=indices.map(i=>'<option value="'+i+'">'+escapeHTML(players[i]?.name||'Player '+(i+1))+'</option>').join('');
+ shopPanel.hidden=false;renderShop();shopEl('closeShop').focus();
+};
+function closeShop(){shopOpen=false;shopPanel.hidden=true;if(shopPaused&&state==='paused')play();shopPaused=false;shopEl('shopButton').focus();}
+shopEl('closeShop').onclick=closeShop;shopEl('shopPlayer').onchange=()=>{shopSignature='';renderShop();};
+shopEl('shopItems').onclick=e=>{const button=e.target.closest('[data-skin]');if(button){powerRequest(Number(shopEl('shopPlayer').value), 'skin',button.dataset.skin);shopEl('shopStatus').textContent=net.role==='guest'?'Sent to host.': 'Skin selection saved.';}};
+shopEl('powerButtons').onclick=e=>{const button=e.target.closest('[data-power]');if(button)powerRequest(Number(button.dataset.player),button.dataset.power);};
+document.addEventListener('keydown',e=>{if(!shopOpen)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeShop();}else if(e.key==='Tab'){const items=[...shopPanel.querySelectorAll('button:not(:disabled),select')];const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}else if(!['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))e.stopImmediatePropagation();},true);
+function pearlValue(p){return p.value||1;}
+function relocatePearl(p){
+ let best=null,bestClearance=-Infinity;
+ for(let attempt=0;attempt<400;attempt++){
+  const candidate={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56)};
+  if(distance(candidate,p)<160)continue;
+  let clearance=Infinity;
+  for(const s of snakes)if(s.alive)for(const b of s.parts)clearance=Math.min(clearance,distance(candidate,b)-snakeRadius(s)-CONFIG.pearlRadius-8);
+  for(const q of pearls)if(q!==p)clearance=Math.min(clearance,distance(candidate,q)-22);
+  if(clearance>bestClearance){best=candidate;bestClearance=clearance;}if(clearance>=0)break;
+ }
+ // Always retain the exact number of special dots, even in a crowded arena.
+ if(best)Object.assign(p,best);
+}
+function replenishSpecials(){for(const [value,count,hue] of [[5,5,210],[10,1,275]])while(pearls.filter(p=>pearlValue(p)===value).length<count){const p={x:-1000,y:-1000,hue,value};relocatePearl(p);pearls.push(p);}}
+function eatPearl(s,index){if(net.firebase){net.eat(s,index);return;}const p=pearls[index],value=pearlValue(p);s.size+=value*CONFIG.pearlGrowth;if(s.isPlayer)s.score+=value;if(value>1)relocatePearl(p);else pearls.splice(index,1);body(s);}
+function skinPaint(s,i){
+ if(s.skin==='invisible'||s.skin==='rainbow')return 'hsl('+((elapsed*55+i*19)%360)+' 90% 65%)';
+ if(s.skin==='stripes')return i%3===1?'#302018':s.color;
+ if(s.skin==='gold'||s.skin==='silver')return i%4===1?'#ffffff':s.color;
+ return s.color;
+}
+function drawSkinMark(s,p,i,radius){if(s.skin==='spots'&&i%2===0){ctx.beginPath();ctx.fillStyle='#244939';ctx.arc(p.x,p.y,Math.max(2,radius*.36),0,Math.PI*2);ctx.fill();}}
+function drawDevil(s){if(s.skin==='angel'){ctx.strokeStyle='#ffe782';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-14,7,3,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(-3,sign*5);ctx.lineTo(-11,sign*13);ctx.lineTo(5,sign*8);ctx.fill();}return;}if(s.skin!=='devil')return;ctx.fillStyle='#ffe5b9';for(const sign of [-1,1]){ctx.beginPath();ctx.moveTo(-4,sign*5);ctx.lineTo(-9,sign*14);ctx.lineTo(3,sign*7);ctx.fill();}}
+
+</script><script>
+'use strict';
+const touchSteering=document.createElement('div');
+touchSteering.className='touch-steering';
+touchSteering.setAttribute('aria-label','Snake direction controls');
+document.querySelector('.controls').prepend(touchSteering);
+let steeringSignature='';
+function updateTouchControls(){
+ const indices=net.role==='guest'?[1]:net.role==='host'?[0]:players.map((_,i)=>i);
+ const signature=JSON.stringify(indices.map(i=>[i,players[i]?.name]));
+ if(signature===steeringSignature)return;
+ steeringSignature=signature;
+ document.querySelector('.controls').classList.toggle('two-touch',indices.length===2);
+ touchSteering.innerHTML=indices.map(i=>'<div class="touch-pad" role="group" aria-label="'+escapeHTML(players[i]?.name||'Player')+' directions">'+[['up','↑'],['left','←'],['down','↓'],['right','→']].map(([direction,arrow])=>'<button type="button" data-steer="'+i+'" data-direction="'+direction+'" aria-label="'+escapeHTML(players[i]?.name||'Player')+' '+direction+'">'+arrow+'</button>').join('')+'</div>').join('');
+}
+function touchTurn(button){
+ if(state!=='playing'||shopOpen)return;
+ const direction=button.dataset.direction,index=Number(button.dataset.steer),s=players[index];
+ if(!s?.alive)return;
+ const angle={up:-Math.PI/2,left:Math.PI,down:Math.PI/2,right:0}[direction];
+ if(net.role==='guest'){net.key({key:'Arrow'+direction[0].toUpperCase()+direction.slice(1),target:button,preventDefault(){}});return;}
+ pointer=null;s.target=angle;
+}
+touchSteering.addEventListener('pointerdown',e=>{const button=e.target.closest('[data-steer]');if(!button)return;e.preventDefault();touchTurn(button);});
+// Keyboard and assistive-technology activation also works.
+touchSteering.addEventListener('click',e=>{const button=e.target.closest('[data-steer]');if(button)touchTurn(button);});
+window.visualViewport?.addEventListener('resize',fitArena);
+
+</script><script>reset();net.init();fitArena();requestAnimationFrame(frame);</script></body></html>
+
+
+
+
+

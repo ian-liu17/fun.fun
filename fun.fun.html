@@ -1,8 +1,8 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6f3e9">
   <meta name="description" content="Fun.fun is a free online game arcade. Play Cat Sprint and Snake Arena in your browser—run, jump, dodge, gobble pearls, and challenge rivals. No downloads needed.">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -284,6 +284,19 @@
       .snake-footer { flex-direction: column; gap: 5px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+    @media(max-width:700px),(pointer:coarse){
+      button{min-height:44px}input,select,textarea{font-size:16px}
+      .mobile-controls{display:flex}.mobile-controls button{flex:1;min-width:0;min-height:52px}
+      .snake-frame{height:calc(100dvh - 110px);min-height:320px}
+      .overlay{padding:12px;overflow-y:auto}.overlay-card{max-height:100%;overflow-y:auto}
+      .score-form-row{flex-wrap:wrap}.score-form-row input{min-width:0;width:100%}
+      .arcade-header{flex-wrap:wrap}.game-nav{flex-wrap:wrap}
+    }
+    @media(max-width:380px){
+      body{padding:14px 8px 20px}.score-card{min-width:85px}.tagline{font-size:12px}
+      .overlay p{font-size:12px;margin-bottom:10px}.overlay h2{font-size:21px}
+      .game-footer{flex-wrap:wrap;gap:5px}.game-pick{padding:18px}
+    }
   </style>
 </head>
 <body>
