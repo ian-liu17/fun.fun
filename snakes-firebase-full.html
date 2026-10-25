@@ -98,16 +98,159 @@ body{height:100svh;height:100dvh}
 <p id="roomStatus" role="status" aria-live="polite">Host a game or enter your friend's code.</p>
 <div class="actions"><button id="beginOnline" class="primary" hidden disabled>Start Game</button><button id="leaveRoom">Back to local game</button></div>
 <p>2–6 players per room. The host starts the game once at least one friend joins. Keep the host's tab open.</p>
-</section><script data-online-version="firebase-6players-3">
+</section><script data-shared-world>
+/* The host simulates the shared arena; each browser steers its own player. */
+'use strict';
+function createSharedArena(session){
+ let foodState=[],latestWorld=null,worldRound=null,life=crypto.randomUUID(),paused=false,outcome=null;
+ let lastTick=0,lastWorldSend=0,foodDirty=true,coverageDirty=true,worldSending=false;
+ const pendingClaims=new Set(),processedClaims=new Set(),processedEvents=new Set(),deadLives=new Set(),spentBites=new Set();
+ const baseColors=['#b3ff83','#fd75aa','#67c7ff','#ffc568','#b79aff','#5be0ca'];
+ const api={tick,step,eat,replenish,receive,resetPlayer,decodePlayer,serializePlayer,revived,changed,requestPause,clear,get running(){return !!session.round&&!paused&&!outcome;}};
+ function path(suffix){return session.sdk.ref(session.db,'rooms/'+session.room+'/'+suffix);}
+ function send(p,value){session.sdk.set(path(p),value).catch(session.fail);}
+ function decorateLocal(){if(player?.skin==='default')player.color=baseColors[Number(session.slot.slice(1))-1];}
+ function serializePlayer(){decorateLocal();return {owner:session.owner,life,body:player.parts.map(p=>({x:p.x,y:p.y})),score:player.score,kills:player.kills||0,name:player.name,alive:player.alive,angle:player.angle,skin:player.skin||'default',shield:player.shield||0,invisibleUntil:player.invisibleUntil||0,angelUntil:player.angelUntil||0,boostUntil:player.boostUntil||0,devilArmed:!!player.devilArmed,devilUsed:player.devilUsed||0,devilWindow:player.devilWindow||0};}
+ function decodePlayer(data,id){
+  const skin=SKINS.find(k=>k.id===data.skin)||SKINS[0];
+  return {...data,...data.body[0],parts:data.body,trail:data.body,isPlayer:true,remote:true,slot:id,skin:skin.id,color:skin.id==='default'?baseColors[Number(id.slice(1))-1]:skin.color,name:typeof data.name==='string'?data.name.slice(0,16):'Player '+id.slice(1),size:data.body.length,alive:data.alive===true,angle:Number.isFinite(data.angle)?data.angle:0,shield:Math.max(0,Number(data.shield)||0)};
+ }
+
+ function replenish(){pearls=foodState;}
+ function refill(){pearls=foodState;replenishLocal();for(const p of pearls)if(!p.id)p.id=crypto.randomUUID();foodState=pearls;foodDirty=true;}
+ function resetPlayer(){
+  life=crypto.randomUUID();player.life=life;player.owner=session.owner;pendingClaims.clear();decorateLocal();snakes=snakes.filter(s=>s.isPlayer);
+  if(session.isHost&&worldRound!==session.round){
+   worldRound=session.round;paused=false;outcome=null;processedClaims.clear();processedEvents.clear();deadLives.clear();spentBites.clear();foodState=[];refill();foodDirty=coverageDirty=true;lastWorldSend=0;
+  }else if(!session.isHost){if(worldRound!==session.round){worldRound=session.round;paused=false;outcome=null;processedEvents.clear();}applyWorld(latestWorld);}
+  replenish();
+ }
+ function revived(){life=crypto.randomUUID();player.life=life;session.publish(true);}
+ function changed(){decorateLocal();session.publish(true);}
+ function die(reason){
+  if(!player.alive)return;player.alive=false;session.publish(true);deathReason=reason;reviveQueue=[player];nextRevive();
+ }
+ function grant(s,growth,score=0,kills=0){
+  if(s===player){player.size+=growth;player.score+=score;player.kills+=kills;body(player);session.publish(true);return;}
+  s.size+=growth;s.score+=score;s.kills=(s.kills||0)+kills;
+  send('events/'+s.slot+'/'+crypto.randomUUID(),{round:session.round,life:s.life,type:'grow',growth,score,kills});
+ }
+ function consume(s,p){
+  const index=foodState.findIndex(f=>f.id===p.id);if(index<0||!s.alive)return;
+  const value=pearlValue(p);if(s.isPlayer)grant(s,value*CONFIG.pearlGrowth,value);else{s.size+=value*CONFIG.pearlGrowth;body(s);}
+  pearls=foodState;
+  if(value>1){relocatePearl(p);p.id=crypto.randomUUID();}else pearls.splice(index,1);
+  foodState=pearls;refill();
+ }
+ function eat(s,index){
+  const p=pearls[index];if(!p||!session.ready||pendingClaims.has(p.id))return;
+  if(session.isHost){consume(s,p);return;}
+  if(s!==player)return;pendingClaims.add(p.id);
+  session.sdk.runTransaction(path('claims/'+p.id),current=>current===null?{by:session.slot,owner:session.owner,life,round:session.round,foodId:p.id}:undefined,{applyLocally:false}).catch(e=>{pendingClaims.delete(p.id);session.fail(e);});
+ }
+ function applyWorld(world){
+  if(!world||(world.round||null)!==session.round)return;
+  latestWorld=world;
+  if(Array.isArray(world.food))foodState=world.food.filter(p=>p&&session.validPoint(p)&&typeof p.id==='string'&&[1,5,10].includes(pearlValue(p)));
+  snakes=snakes.filter(s=>s.isPlayer);
+  if(Number.isFinite(world.elapsed))elapsed=Math.max(elapsed,world.elapsed);
+  if(Array.isArray(world.coverage)){coverageMap.fill(0);for(const index of world.coverage)if(Number.isInteger(index)&&index>=0&&index<COVERAGE_TOTAL)coverageMap[index]=1;coveredTiles=coverageMap.reduce((a,b)=>a+b,0);}
+  if(Number.isInteger(world.respawnProgress))respawnProgress=world.respawnProgress;
+  if(typeof world.notice==='string'){ui.spawnNotice.textContent=world.notice;noticeUntil=Number(world.noticeUntil)||0;}
+  replenish();
+ }
+ function receive(value){
+  paused=value.control?.round===session.round&&value.control.paused===true;
+  if(paused&&state==='playing')pause(true);else if(!paused&&state==='paused')play(true);
+  if(!session.isHost)applyWorld(value.world);
+  const events=value.events?.[session.slot]||{};
+  for(const [id,event] of Object.entries(events)){
+   if(processedEvents.has(id))continue;processedEvents.add(id);
+   if(event.round===session.round&&event.life===life){
+    if(event.type==='grow'&&Number.isFinite(event.growth)&&event.growth>=0){player.size+=event.growth;player.score+=event.score||0;player.kills+=event.kills||0;body(player);session.publish(true);}
+    if(event.type==='devil'){spendDevil(player);session.publish(true);}
+    if(event.type==='death')die(event.reason||'A rival gobbled your snake.');
+   }
+   session.sdk.remove(path('events/'+session.slot+'/'+id)).catch(session.fail);
+  }
+  if(session.isHost&&session.ready){
+   for(const [id,claim] of Object.entries(value.claims||{})){
+    if(processedClaims.has(id))continue;processedClaims.add(id);
+    const s=claim.by===session.slot?player:session.remotes.find(p=>p.slot===claim.by);
+    const p=foodState.find(p=>p.id===claim.foodId);
+    if(claim.round===session.round&&s&&p&&s.owner===claim.owner&&s.life===claim.life)consume(s,p);
+    session.sdk.remove(path('claims/'+id)).catch(session.fail);
+   }
+  }
+  if(value.result?.round===session.round&&!outcome){outcome=value.result.type;if(outcome==='won')finish(true,'You explored every tile together!');}
+  updateHUD();
+ }
+ function requestPause(value){if(session.ready&&session.round)send('control',{round:session.round,paused:!!value});}
+ function killHuman(victim,reason){
+  const key=victim.owner+':'+victim.life;if(deadLives.has(key))return;deadLives.add(key);
+  if(victim===player)die(reason);else{victim.alive=false;send('events/'+victim.slot+'/'+crypto.randomUUID(),{round:session.round,life:victim.life,type:'death',reason});}
+ }
+ function bite(winner,victim){
+  if(devilCanEat(winner)){
+   if(winner===player)spendDevil(winner);
+   else{spentBites.add(winner.owner+':'+winner.life+':'+winner.devilWindow+':'+winner.devilUsed);winner.devilArmed=false;send('events/'+winner.slot+'/'+crypto.randomUUID(),{round:session.round,life:winner.life,type:'devil'});}
+  }
+  grant(winner,victim.size,0,1);killHuman(victim,victim.name+' was gobbled by '+winner.name+'.');
+ }
+ function worldStep(dt){
+  elapsed+=dt;const humans=[player,...session.remotes];
+  for(const s of humans){
+   if(s.remote&&spentBites.has(s.owner+':'+s.life+':'+s.devilWindow+':'+s.devilUsed))s.devilArmed=false;
+   if(s.alive)markCoverage(s);
+  }
+  for(let i=0;i<humans.length;i++)for(let j=i+1;j<humans.length;j++){
+   const a=humans[i],b=humans[j];
+   if(!a.alive||!b.alive||a.shield>0||b.shield>0||deadLives.has(a.owner+':'+a.life)||deadLives.has(b.owner+':'+b.life))continue;
+   const r=snakeRadius(a)+snakeRadius(b),aHit=b.parts.some(p=>distance(a,p)<=r),bHit=a.parts.some(p=>distance(b,p)<=r);
+   if(aHit&&empoweredCanEat(a)&&!empoweredCanEat(b)){bite(a,b);continue;}
+   if(bHit&&empoweredCanEat(b)&&!empoweredCanEat(a)){bite(b,a);continue;}
+   if(aHit)killHuman(a,a.name+' hit '+b.name+'\'s snake.');
+   if(bHit)killHuman(b,b.name+' hit '+a.name+'\'s snake.');
+  }
+  if(coveredTiles>=COVERAGE_TOTAL&&!outcome){outcome='won';send('result',{round:session.round,type:'won'});finish(true,'You explored every tile together!');}
+ }
+ function tick(time){
+  const dt=Math.min(Math.max((time-lastTick)/1000||0,0),.1);lastTick=time;
+  if(session.isHost&&api.running){worldStep(dt);coverageDirty=true;}
+  if(session.isHost&&session.ready&&(!lastWorldSend||time-lastWorldSend>=100))publishWorld(time);
+ }
+ function publishWorld(time){
+  if(worldSending)return;worldSending=true;lastWorldSend=time;
+  const data={round:session.round,elapsed,respawnProgress,notice:ui.spawnNotice.textContent,noticeUntil};
+  if(foodDirty){data.food=foodState.map(p=>({...p}));foodDirty=false;}
+  if(coverageDirty){data.coverage=Array.from(coverageMap.entries()).filter(([,v])=>v).map(([i])=>i);coverageDirty=false;}
+  session.sdk.update(path('world'),data).catch(e=>{foodDirty=coverageDirty=true;session.fail(e);}).finally(()=>{worldSending=false;});
+ }
+ function step(dt){
+  if(paused||outcome)return;
+  if(!session.isHost)elapsed+=dt;
+  player.shield=Math.max(0,(player.shield||0)-dt);
+  move(player,dt);
+  for(let i=pearls.length-1;i>=0;i--)if(distance(player,pearls[i])<=snakeRadius(player)+CONFIG.pearlRadius)eat(player,i);
+  if(player.parts.some(p=>p.x<=snakeRadius(player)||p.y<=snakeRadius(player)||p.x>=CONFIG.width-snakeRadius(player)||p.y>=CONFIG.height-snakeRadius(player))){die(player.name+' bumped the border. Keep your whole snake inside!');return;}
+  session.publish();awardKing();updateHUD();
+ }
+ function clear(){foodState=[];latestWorld=null;worldRound=null;paused=false;outcome=null;lastTick=lastWorldSend=0;processedClaims.clear();pendingClaims.clear();processedEvents.clear();deadLives.clear();spentBites.clear();}
+ return api;
+}
+
+</script><script data-online-version="online-parity-4">
 /* Firebase multiplayer: 2–6 players, five-character room codes. */
 'use strict';
 function createOnlineSession(){
  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',slots=Array.from({length:6},(_,i)=>'p'+(i+1));
  const colors=['#b3ff83','#fd75aa','#67c7ff','#ffc568','#b79aff','#5be0ca'];
- let room='',slot='p1',sdk,db,mine,foodRef,roomRef,food=null,remotes=[],members=[];
- let connected=false,ready=false,error='',generation=0,unsub=[],consumed=null,rotating=false,lastAlive=null,loading=null,busy=false,lastRound=null;
+ let room='',slot='p1',sdk,db,mine,roomRef,remotes=[],members=[];
+ let lastPublish=0;
+ let connected=false,ready=false,error='',generation=0,unsub=[],lastAlive=null,loading=null,busy=false,lastRound=null;
  const owner=crypto.randomUUID(),el=id=>document.getElementById(id);
- const api={role:null,firebase:false,init,host,join,begin,leave,restart(){if(slot==='p1')begin();},tick(){if(api.firebase&&player&&player.alive!==lastAlive){lastAlive=player.alive;publish();}},key(){return false;},pointer(){},action(){},reset:resetOnline,afterStep,replenish:()=>{pearls=food&&food.id!==consumed?[food]:[];},eat};
+ const api={role:null,firebase:false,init,host,join,begin,leave,restart(){if(slot==='p1')begin();},get isHost(){return slot==='p1';},get running(){return arena.running;},step:dt=>arena.step(dt),pause:value=>arena.requestPause(value),revived:()=>arena.revived(),changed:()=>arena.changed(),tick(time){if(api.firebase){arena.tick(time);if(player&&player.alive!==lastAlive){lastAlive=player.alive;publish(true);}}},key(){return false;},pointer(){},action(){},reset:resetOnline,afterStep,replenish:()=>arena.replenish(),eat};
+ const arena=createSharedArena({get isHost(){return slot==='p1';},get slot(){return slot;},get ready(){return ready;},get round(){return lastRound;},get room(){return room;},get remotes(){return remotes;},get sdk(){return sdk;},get db(){return db;},owner,publish,fail,validPoint});
  const status=document.createElement('span');status.className='enemy-stat';status.setAttribute('role','status');status.hidden=true;
  function report(){
   const message=error||(!connected?'Connecting...':members.length<2?'Waiting for friends...':lastRound?'Game in progress':slot==='p1'?'Ready to start!':'Waiting for the host to start...');
@@ -123,42 +266,24 @@ function createOnlineSession(){
   if(!value?.p1){leave(false);el('roomPanel').hidden=false;fail(new Error('The host closed the room. Host or join another game.'));return;}
   members=slots.filter(id=>value[id]).map(id=>({slot:id,name:typeof value[id].name==='string'?value[id].name.slice(0,16):'Player '+id.slice(1)}));
   remotes=[];snakes=snakes.filter(s=>!s.remote);
-  for(const id of slots){
-   const data=value[id];if(id===slot||!data||!Array.isArray(data.body)||!data.body.length||!data.body.every(validPoint)||!Number.isFinite(data.score))continue;
-   const snake={...data,...data.body[0],parts:data.body,trail:data.body,isPlayer:true,remote:true,color:colors[Number(id.slice(1))-1],name:typeof data.name==='string'?data.name.slice(0,16):'Player '+id.slice(1),size:data.body.length,alive:data.alive===true,angle:Number.isFinite(data.angle)?data.angle:0};remotes.push(snake);snakes.push(snake);
-  }
-  food=value.food&&validPoint(value.food)&&typeof value.food.id==='string'?value.food:null;api.replenish();
-  if(slot==='p1'&&ready){if(!food)spawnFood(null);else if(food.id===consumed||slots.some(id=>value[id]?.consumedFood===food.id))spawnFood(food.id);}
-  if(value.round&&value.round!==lastRound){lastRound=value.round;consumed=null;start();el('roomPanel').hidden=true;}
-  report();
+  for(const id of slots){const data=value[id];if(id===slot||!data||!Array.isArray(data.body)||!data.body.length||!data.body.every(validPoint)||!Number.isFinite(data.score))continue;const snake=arena.decodePlayer(data,id);remotes.push(snake);snakes.push(snake);}
+  if(value.round&&value.round!==lastRound){lastRound=value.round;start();el('roomPanel').hidden=true;}
+  arena.receive(value);report();
  }
- async function spawnFood(expected){
-  if(!ready||slot!=='p1'||rotating)return;rotating=true;const token=generation;
-  try{
-   let point;for(let n=0;n<100;n++){point={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56)};if(!snakes.some(s=>s.alive&&s.parts.some(p=>distance(p,point)<snakeRadius(s)+16)))break;}
-   const next={...point,hue:60,id:crypto.randomUUID()};
-   await sdk.runTransaction(foodRef,current=>{if(token!==generation||!api.firebase)return;if(expected===null?current!==null:current?.id!==expected)return;return next;},{applyLocally:false});
-  }catch(e){fail(e);}finally{rotating=false;}
- }
- function publish(){
+ function publish(force=false){
   if(!ready||!connected||!player||!api.firebase)return;
-  sdk.set(mine,{owner,body:player.parts.map(p=>({x:p.x,y:p.y})),score:player.score,name:player.name,alive:player.alive,angle:player.angle,consumedFood:consumed||null}).catch(fail);
+  const now=performance.now();if(!force&&now-lastPublish<50)return;lastPublish=now;
+  sdk.set(mine,arena.serializePlayer()).catch(fail);
  }
  function resetOnline(){
   if(!api.firebase)return;const index=Number(slot.slice(1))-1;
-  player.x=600+(index%3)*400;player.y=index<3?520:800;player.color=colors[index];
+  player.x=600+(index%3)*400;player.y=index<3?520:800;
   player.trail=Array.from({length:40},(_,i)=>({x:player.x,y:player.y+i*2}));body(player);
-  for(const remote of remotes)if(!snakes.includes(remote))snakes.push(remote);api.replenish();publish();
+  for(const remote of remotes)if(!snakes.includes(remote))snakes.push(remote);
+  arena.resetPlayer();publish(true);
  }
- function eat(s){
-  if(s!==player||!ready||!connected||!food||food.id===consumed)return;
-  consumed=food.id;s.size+=CONFIG.pearlGrowth;s.score++;body(s);api.replenish();publish();if(slot==='p1')spawnFood(consumed);
- }
- function afterStep(){
-  if(!api.firebase)return false;
-  if(player.alive&&remotes.some(remote=>remote.alive&&remote.parts.some(p=>distance(player,p)<=snakeRadius(player)+snakeRadius(remote)))){player.alive=false;publish();updateHUD();finish(false,'Your head hit another player\'s snake!');return true;}
-  publish();return false;
- }
+ function eat(s,index){arena.eat(s,index);}
+ function afterStep(){arena.step(0);return !player.alive;}
  async function load(){
   if(!loading)loading=(async()=>{
    const [app,database]=await Promise.all([import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js')]);
@@ -207,9 +332,9 @@ function createOnlineSession(){
  }
  async function connect(){
   const token=++generation;api.firebase=true;api.role='host';status.hidden=false;lastRound=null;error='';
-  mine=sdk.ref(db,'rooms/'+room+'/'+slot);foodRef=sdk.ref(db,'rooms/'+room+'/food');
+  mine=sdk.ref(db,'rooms/'+room+'/'+slot);
   mode=1;names=[playerName()];ui.mode.value='1';ui.mode.disabled=true;ui.name1.value=names[0];ui.secondName.hidden=true;ui.name2.required=false;
-  state='ready';reset();el('onlineButton').textContent='Online Room';el('roomDisplay').hidden=false;el('hostCode').textContent=room;el('joinFields').hidden=true;report();
+  state='ready';reset();ui.enemies.parentElement.hidden=true;ui.respawnProgress.parentElement.hidden=true;el('onlineButton').textContent='Online Room';el('roomDisplay').hidden=false;el('hostCode').textContent=room;el('joinFields').hidden=true;report();
   unsub.push(sdk.onValue(roomRef,receiveRoom,fail));
   unsub.push(sdk.onValue(sdk.ref(db,'.info/connected'),async snapshot=>{
    connected=false;ready=false;report();if(!snapshot.val())return;
@@ -217,7 +342,7 @@ function createOnlineSession(){
     await sdk.onDisconnect(slot==='p1'?roomRef:mine).remove();if(token!==generation)return;
     const current=await sdk.get(roomRef);if(token!==generation)return;
     if(current.val()?.[slot]?.owner!==owner){leave(false);el('roomPanel').hidden=false;fail(new Error('Your room connection expired. Host or join a new room.'));return;}
-    connected=true;ready=true;report();publish();if(slot==='p1'&&!food)spawnFood(null);
+    connected=true;ready=true;report();publish(true);arena.tick(performance.now());
    }catch(e){fail(e);}
   },fail));
  }
@@ -228,9 +353,9 @@ function createOnlineSession(){
  function leave(remove=true){
   generation++;unsub.forEach(stop=>stop());unsub=[];
   if(remove&&mine&&sdk){const target=slot==='p1'?roomRef:mine;sdk.remove(target).then(()=>sdk.onDisconnect(target).cancel()).catch(fail);}
-  ready=connected=false;api.firebase=false;api.role=null;remotes=[];members=[];food=null;consumed=null;lastRound=null;status.hidden=true;
+  ready=connected=false;arena.clear();api.firebase=false;api.role=null;remotes=[];members=[];lastRound=null;status.hidden=true;
   el('onlineButton').textContent='Play Online';el('roomPanel').hidden=true;el('roomDisplay').hidden=true;el('joinFields').hidden=false;el('beginOnline').hidden=true;error='';
-  ui.mode.disabled=false;mode=1;reset();setupScreen();setBusy(false);report();
+  ui.mode.disabled=false;ui.enemies.parentElement.hidden=false;ui.respawnProgress.parentElement.hidden=false;mode=1;reset();setupScreen();setBusy(false);report();
  }
  function init(){
   document.querySelector('.stats').append(status);
@@ -253,7 +378,7 @@ const XP_KEY='myArcade.snakeArena.xp';
 let xp=0,lastKing=null,reviveQueue=[],reviveDeadline=0,deathReason='';
 try{const saved=Number(localStorage.getItem(XP_KEY));if(Number.isSafeInteger(saved)&&saved>=0)xp=saved;}catch{}
 function saveXP(){if(net.role==='guest')return;ui.xp.textContent=xp;try{localStorage.setItem(XP_KEY,String(xp));}catch{}}
-function awardKing(){const king=ranking()[0];if(king!==lastKing){if(king?.isPlayer){xp+=5;saveXP();}lastKing=king;}}
+function awardKing(){const king=ranking()[0];if(king!==lastKing){if(king?.isPlayer&&(!net.firebase||king===player)){xp+=5;saveXP();}lastKing=king;}}
 function clearRevive(){reviveQueue=[];ui.revive.hidden=true;ui.skipRevive.hidden=true;ui.start.hidden=false;ui.restart.hidden=false;}
 function nextRevive(){
  if(!reviveQueue.length){clearRevive();if(!players.some(p=>p.alive))finish(false,deathReason);else play();return;}
@@ -272,7 +397,7 @@ function revivePlayer(){
  for(let y=100;y<=CONFIG.height-100;y+=100)for(let x=100;x<=CONFIG.width-100;x+=100){let nearest=Infinity;for(const other of snakes)if(other.alive)for(const part of other.parts)nearest=Math.min(nearest,Math.hypot(x-part.x,y-part.y));if(nearest>clearance){clearance=nearest;best={x,y};}}
  p.x=best.x;p.y=best.y;p.angle=0;p.target=0;p.goal=0;p.trailRemainder=0;
  p.trail=Array.from({length:Math.ceil(p.size*CONFIG.spacing/2)+30},(_,i)=>({x:best.x+35*(Math.cos(i/17.5)-1),y:best.y+35*Math.sin(i/17.5)}));
- p.alive=true;p.shield=5;pointer=null;body(p);updateHUD();nextRevive();
+ p.alive=true;p.shield=5;pointer=null;body(p);if(net.firebase)net.revived();updateHUD();nextRevive();
 }
 function skipRevive(){if(state!=='reviving')return;reviveQueue.shift();nextRevive();}
 const HIGH_SCORE_KEY='myArcade.snakeArena.highScore';
@@ -325,7 +450,7 @@ function spawnRival(locations){
  return false;
 }
 function processSpawns(){
- if(state!=='playing'||net.role==='guest')return;
+ if((state!=='playing'&&!(net.firebase&&net.isHost&&net.running))||net.role==='guest')return;
  if(!snakes.some(s=>s.alive&&!s.isPlayer)&&!pendingSpawns.length)
   pendingSpawns.push({remaining:1,locations:lastConsumed?[lastConsumed]:[],recovery:true});
  if(elapsed<nextSpawnRetry)return;
@@ -338,24 +463,25 @@ function processSpawns(){
  pendingSpawns=pendingSpawns.filter(batch=>batch.remaining>0);
  if(placed){ui.spawnNotice.textContent=placed+' new rival'+(placed===1?'':'s')+' appeared!';noticeUntil=elapsed+3;ui.spawnNotice.hidden=false;}
 }
-function replenish(){if(net.firebase){net.replenish();return;}let attempts=0;while(pearls.filter(p=>pearlValue(p)===1).length<CONFIG.pearls&&attempts++<CONFIG.pearls*10){const p={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56),hue:Math.random()*70+35};if(snakes.some(s=>s.alive&&s.parts.some(b=>distance(b,p)<snakeRadius(s)+12))||pearls.some(q=>distance(p,q)<18))continue;pearls.push(p);}replenishSpecials();}
+function replenish(){if(net.firebase){net.replenish();return;}replenishLocal();}
+function replenishLocal(){let attempts=0;while(pearls.filter(p=>pearlValue(p)===1).length<CONFIG.pearls&&attempts++<CONFIG.pearls*10){const p={x:28+Math.random()*(CONFIG.width-56),y:28+Math.random()*(CONFIG.height-56),hue:Math.random()*70+35};if(snakes.some(s=>s.alive&&s.parts.some(b=>distance(b,p)<snakeRadius(s)+12))||pearls.some(q=>distance(p,q)<18))continue;pearls.push(p);}replenishSpecials();}
 function reset(){respawnProgress=0;pendingSpawns=[];pairLocations=[];lastConsumed=null;noticeUntil=0;nextSpawnRetry=0;ui.spawnNotice.hidden=true;clearRevive();lastKing=null;score=0;kills=0;elapsed=0;coverageMap.fill(0);coveredTiles=0;cameraX=0;cameraY=0;rivalSerial=CONFIG.enemies;pointer=null;targetAngle=-Math.PI/2;snakes=[];pearls=[];players=[];for(let i=0;i<mode;i++){const s=makeSnake(mode===1?1000:(i===0?850:1150),640,CONFIG.playerStartSize,CONFIG.colors[i],-Math.PI/2,true);Object.assign(s,{name:names[i],target:-Math.PI/2,score:0,kills:0});players.push(s);snakes.push(s);}player=players[0];const starts=[[580,400],[790,400],[1000,400],[1210,400],[1420,400],[580,640],[790,640],[1210,640],[1420,640],[580,880],[790,880],[1000,880],[1210,880],[1420,880],[1000,340]];const enemyNames=['Bubbles','Sprinkles','Noodle','Pickles','Ziggy','Mochi','Waffles','Pippin','Tofu','Pebbles','Pancake','Doodle','Mango','Pudding','Biscuit'];for(let i=0;i<CONFIG.enemies;i++){const p=starts[i%starts.length];const s=makeSnake(p[0]+(Math.random()-.5)*30,p[1]+(Math.random()-.5)*30,(i%CONFIG.rivalStartMax)+1,CONFIG.colors[(i+mode)%CONFIG.colors.length],Math.PI/2);s.name=enemyNames[i];s.id="rival-"+i;snakes.push(s);}snakes.forEach(body);resetPowers();replenish();if(net.firebase)net.reset();updateHUD();}
 function ranking(){return snakes.filter(s=>s.alive).sort((a,b)=>b.size-a.size||snakes.indexOf(a)-snakes.indexOf(b));}
 let leaderboardHTML='';
 function escapeHTML(text){return text.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function updateHUD(){ui.respawnProgress.textContent=respawnProgress+"/"+CONFIG.respawnEvery;ui.spawnNotice.hidden=elapsed>=noticeUntil;ui.xp.textContent=xp;ui.pearlCount.textContent=pearls.length;ui.coverage.textContent=Math.floor(coveredTiles/COVERAGE_TOTAL*100)+'%';updateHighScore();ui.enemies.textContent=snakes.filter(s=>s.alive&&!s.isPlayer).length;ui.playerStats.innerHTML=players.map((s,i)=>'<div class="player-stat '+(s.alive?'':'out')+'" style="--color:'+s.color+'"><b>'+escapeHTML(s.name)+'</b><span>'+(s.alive?'Size '+s.size:'Out')+' / '+s.score+' pearls</span></div>').join('');const html=ranking().slice(0,5).map((s,i)=>'<li style="--snake-color:'+s.color+'"><span class="rank">'+(i===0?'&#9819;':i+1)+'</span><span class="dot"></span><span class="snake-name">'+escapeHTML(s.name)+'</span><strong>'+s.size+'</strong></li>').join('');if(html!==leaderboardHTML){document.getElementById('leaders').innerHTML=html;leaderboardHTML=html;}}
-function play(){state='playing';ui.overlay.hidden=true;ui.pause.disabled=false;ui.pause.textContent='Pause';accumulator=0;canvas.focus({preventScroll:true});}
+function updateHUD(){ui.respawnProgress.textContent=respawnProgress+"/"+CONFIG.respawnEvery;ui.spawnNotice.hidden=elapsed>=noticeUntil;ui.xp.textContent=xp;ui.pearlCount.textContent=pearls.length;ui.coverage.textContent=Math.floor(coveredTiles/COVERAGE_TOTAL*100)+'%';updateHighScore();ui.enemies.textContent=snakes.filter(s=>s.alive&&!s.isPlayer).length;ui.playerStats.innerHTML=(net.firebase?snakes.filter(s=>s.isPlayer):players).map((s,i)=>'<div class="player-stat '+(s.alive?'':'out')+'" style="--color:'+s.color+'"><b>'+escapeHTML(s.name)+'</b><span>'+(s.alive?'Size '+s.size:'Out')+' / '+s.score+' pearls</span></div>').join('');const html=ranking().slice(0,5).map((s,i)=>'<li style="--snake-color:'+s.color+'"><span class="rank">'+(i===0?'&#9819;':i+1)+'</span><span class="dot"></span><span class="snake-name">'+escapeHTML(s.name)+'</span><strong>'+s.size+'</strong></li>').join('');if(html!==leaderboardHTML){document.getElementById('leaders').innerHTML=html;leaderboardHTML=html;}}
+function play(local=false){if(net.firebase&&!local&&state==='paused'){net.pause(false);return;}state='playing';ui.overlay.hidden=true;ui.pause.disabled=false;ui.pause.textContent='Pause';accumulator=0;canvas.focus({preventScroll:true});}
 function start(){reset();play();}
-function pause(){if(net.role==='guest'||state!=='playing')return;state='paused';ui.pause.textContent='Resume';show('Snack break!','Your snakes are taking a little rest.','Resume');}
-function show(title,message,button){ui.setup.hidden=true;ui.heading.textContent=title;ui.message.textContent=message;ui.details.hidden=false;ui.details.textContent=state==='paused'?'Press P or Escape to hop back in.':players.map(s=>s.name+': size '+s.size+' / '+s.score+' pearls / '+s.kills+' rivals eaten').join('\n');ui.gameActions.hidden=false;ui.start.textContent=button;ui.overlay.hidden=false;ui.start.focus({preventScroll:true});}
+function pause(local=false){if(net.firebase&&!local){net.pause(true);return;}if(net.role==='guest'||state!=='playing')return;state='paused';ui.pause.textContent='Resume';show('Snack break!','Your snakes are taking a little rest.','Resume');}
+function show(title,message,button){ui.setup.hidden=true;ui.heading.textContent=title;ui.message.textContent=message;ui.details.hidden=false;ui.details.textContent=state==='paused'?'Press P or Escape to hop back in.':players.map(s=>s.name+': size '+s.size+' / '+s.score+' pearls / '+s.kills+(net.firebase?' players eaten':' rivals eaten')).join('\n');ui.gameActions.hidden=false;ui.start.textContent=button;ui.overlay.hidden=false;ui.start.focus({preventScroll:true});}
 function finish(won,reason){state=won?'won':'lost';ui.pause.disabled=true;show(won?'Arena explored!':'Game Over — nice try!',won?'You explored every part of the arena! Rival snakes keep coming, so they can never be the win condition.':reason,'Play Again');}
 function setupScreen(){clearRevive();state='ready';pointer=null;ui.pause.disabled=true;ui.setup.hidden=false;ui.details.hidden=true;ui.gameActions.hidden=true;ui.overlay.hidden=false;ui.heading.textContent='Ready, set, gobble!';ui.message.textContent='Eat pearls and smaller rivals to grow longer and thicker. Watch out: up to two rivals will chase smaller players! Every two rivals you eat bring 1-3 new snakes somewhere else. Explore the whole arena to win! You start at size 1. Rivals also start at size 1 and move slower than you.';ui.name1.focus({preventScroll:true});}
 
-function ai(s,dt){s.think-=dt;if(s.think>0)return;s.think=.14;let goal=null,best=Infinity;for(const p of pearls){const d=distance(s,p);if(d<best){best=d;goal=p;}}let threat=null,threatDistance=160;for(const other of snakes){if(!other.alive||other===s||invisible(other)||other.size<=s.size)continue;for(const part of other.parts){const d=distance(s,part);if(d<threatDistance){threatDistance=d;threat=part;}}}if(threat)goal={x:s.x+(s.x-threat.x)*3,y:s.y+(s.y-threat.y)*3};else if(elapsed>CONFIG.huntDelay&&snakes.filter(r=>r.alive&&!r.isPlayer).slice(0,CONFIG.maxHunters).includes(s)){const prey=players.filter(p=>p.alive&&!p.shield&&!invisible(p)&&p.size<s.size&&distance(s,p)<CONFIG.huntRange).sort((a,b)=>distance(s,a)-distance(s,b))[0];if(prey)goal=prey;}
+function ai(s,dt){s.think-=dt;if(s.think>0)return;s.think=.14;let goal=null,best=Infinity;for(const p of pearls){const d=distance(s,p);if(d<best){best=d;goal=p;}}let threat=null,threatDistance=160;for(const other of snakes){if(!other.alive||other===s||invisible(other)||other.size<=s.size)continue;for(const part of other.parts){const d=distance(s,part);if(d<threatDistance){threatDistance=d;threat=part;}}}if(threat)goal={x:s.x+(s.x-threat.x)*3,y:s.y+(s.y-threat.y)*3};else if(elapsed>CONFIG.huntDelay&&snakes.filter(r=>r.alive&&!r.isPlayer).slice(0,CONFIG.maxHunters).includes(s)){const prey=(net.firebase?snakes.filter(s=>s.isPlayer):players).filter(p=>p.alive&&!p.shield&&!invisible(p)&&p.size<s.size&&distance(s,p)<CONFIG.huntRange).sort((a,b)=>distance(s,a)-distance(s,b))[0];if(prey)goal=prey;}
 let dx=goal?goal.x-s.x:Math.cos(s.angle),dy=goal?goal.y-s.y:Math.sin(s.angle);const mag=Math.hypot(dx,dy)||1;dx/=mag;dy/=mag;const margin=Math.max(85,snakeRadius(s)+30);if(s.x<margin)dx+=(margin-s.x)/18;if(s.x>CONFIG.width-margin)dx-=(s.x-CONFIG.width+margin)/18;if(s.y<margin)dy+=(margin-s.y)/18;if(s.y>CONFIG.height-margin)dy-=(s.y-CONFIG.height+margin)/18;s.goal=Math.atan2(dy,dx);}
 function move(s,dt){let desired=s.goal;if(s.isPlayer){if((mode===1||net.role==='host')&&pointer&&distance(s,pointer)>5)s.target=Math.atan2(pointer.y-s.y,pointer.x-s.x);desired=s.target;}else ai(s,dt),desired=s.goal;const delta=angleDelta(desired,s.angle);s.angle+=Math.max(-CONFIG.turnRate*dt,Math.min(CONFIG.turnRate*dt,delta));const old={x:s.x,y:s.y};const speed=(s.isPlayer?CONFIG.speed:CONFIG.rivalSpeed)*(s.boostUntil>elapsed?2:1)*(s.skin==='angel'?1.1:1);s.x+=Math.cos(s.angle)*speed*dt;s.y+=Math.sin(s.angle)*speed*dt;if(!s.isPlayer){const edge=snakeRadius(s)+6;s.x=Math.max(edge,Math.min(CONFIG.width-edge,s.x));s.y=Math.max(edge,Math.min(CONFIG.height-edge,s.y));}const moved=distance(old,s);s.trailRemainder=(s.trailRemainder||0)+moved;while(s.trailRemainder>=2){s.trailRemainder-=2;const fraction=moved?1-s.trailRemainder/moved:1;s.trail.unshift({x:old.x+(s.x-old.x)*fraction,y:old.y+(s.y-old.y)*fraction});}s.trail.length=Math.min(s.trail.length,Math.ceil(s.size*CONFIG.spacing/2)+30);body(s);}
 function touching(a,b){const r=snakeRadius(a)+snakeRadius(b);for(const p of a.parts)for(const q of b.parts)if(Math.abs(p.x-q.x)<r&&Math.abs(p.y-q.y)<r&&distance(p,q)<=r)return true;return false;}
-function step(dt){const aliveBefore=players.filter(p=>p.alive);for(const p of players)p.shield=Math.max(0,(p.shield||0)-dt);elapsed+=dt;for(const s of snakes)if(s.alive&&!s.remote){move(s,dt);if(s.isPlayer)markCoverage(s);}for(const s of snakes){if(!s.alive||(net.firebase&&s!==player))continue;for(let i=pearls.length-1;i>=0;i--)if(distance(s,pearls[i])<=snakeRadius(s)+CONFIG.pearlRadius){eatPearl(s,i);}}
+function step(dt){if(net.firebase){net.step(dt);return;}const aliveBefore=players.filter(p=>p.alive);for(const p of players)p.shield=Math.max(0,(p.shield||0)-dt);elapsed+=dt;for(const s of snakes)if(s.alive&&!s.remote){move(s,dt);if(s.isPlayer)markCoverage(s);}for(const s of snakes){if(!s.alive||(net.firebase&&s!==player))continue;for(let i=pearls.length-1;i>=0;i--)if(distance(s,pearls[i])<=snakeRadius(s)+CONFIG.pearlRadius){eatPearl(s,i);}}
 let reason='Both snakes are out. Collect pearls and try again!';for(const p of players){if(p.alive&&p.parts.some(b=>b.x<=snakeRadius(p)||b.y<=snakeRadius(p)||b.x>=CONFIG.width-snakeRadius(p)||b.y>=CONFIG.height-snakeRadius(p))){p.alive=false;reason=p.name+' bumped the border. Keep your whole snake inside!';}}
 if(net.firebase&&net.afterStep())return;
 for(let i=0;i<snakes.length;i++)for(let j=i+1;j<snakes.length;j++){const a=snakes[i],b=snakes[j];if(a.remote||b.remote||!a.alive||!b.alive||a.shield>0||b.shield>0||(a.isPlayer&&b.isPlayer)||(!empoweredCanEat(a)&&!empoweredCanEat(b)&&a.size===b.size)||!touching(a,b))continue;const empowered=empoweredCanEat(a)?a:empoweredCanEat(b)?b:null;const big=empowered||(a.size>b.size?a:b),small=big===a?b:a;if(empowered&&devilCanEat(empowered))spendDevil(empowered);small.alive=false;big.size+=small.size;if(big.isPlayer&&!small.isPlayer){big.kills++;recordRivalEat(small);}body(big);if(small.isPlayer)reason=small.name+' was gobbled by '+big.name+'. Grow a little more next time!';}
@@ -370,13 +496,13 @@ canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'||e.buttons)
 ui.mode.addEventListener('change',()=>{const two=ui.mode.value==='2';ui.secondName.hidden=!two;ui.name2.required=two;ui.setupHelp.textContent=two?'Team up! Player 1: WASD. Player 2: arrows. You cannot eat each other. Respawn progress is shared.':'Use WASD, arrows, or your mouse, trackpad, or touch.';ui.error.hidden=true;});
 ui.setup.addEventListener('submit',e=>{e.preventDefault();const count=Number(ui.mode.value);const entered=[ui.name1.value.trim(),ui.name2.value.trim()];if(!entered[0]||(count===2&&!entered[1])){ui.error.hidden=false;(entered[0]?ui.name2:ui.name1).focus();return;}mode=count;names=entered;ui.error.hidden=true;ui.setup.hidden=true;ui.controlHint.textContent=mode===2?'Player 1: WASD / Player 2: arrows':'WASD / arrows / pointer / touch';start();});
 ui.revive.addEventListener('click',()=>{if(net.role!=='guest')revivePlayer();});ui.skipRevive.addEventListener('click',()=>{if(net.role!=='guest')skipRevive();});
-ui.start.addEventListener('click',()=>net.role==='guest'?null:state==='paused'?play():net.firebase?net.restart():start());ui.restart.addEventListener('click',()=>net.role?net.leave():setupScreen());ui.pause.addEventListener('click',()=>state==='playing'?pause():state==='paused'?play():null);document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});// Visibility changes and the Pause button control pausing; IDE focus changes do not.
+ui.start.addEventListener('click',()=>net.role==='guest'?null:state==='paused'?play():net.firebase?net.restart():start());ui.restart.addEventListener('click',()=>net.role?net.leave():setupScreen());ui.pause.addEventListener('click',()=>state==='playing'?pause():state==='paused'?play():null);document.addEventListener('visibilitychange',()=>{if(document.hidden&&!net.firebase)pause();});// Visibility changes and the Pause button control pausing; IDE focus changes do not.
 function fitArena(){const r=document.getElementById('arena').getBoundingClientRect();if(r.width<=0||r.height<=0)return;const compact=matchMedia('(max-width:900px), (pointer:coarse)').matches;const width=compact?(r.width<r.height?640:1000):1000,height=compact?Math.max(240,Math.min(1100,Math.round(width*r.height/r.width))):640;if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}const scale=Math.max(.01,Math.min(r.width/canvas.width,r.height/canvas.height));canvas.style.width=(canvas.width*scale)+'px';canvas.style.height=(canvas.height*scale)+'px';}
 new ResizeObserver(fitArena).observe(document.getElementById('arena'));window.addEventListener('resize',fitArena);
 // Start the self-contained local game.
 </script><script>
 'use strict';
-// The host owns the shared wallet, unlocks, timers, and all gameplay actions.
+// Each device keeps its own wallet, unlocks, and player power controls.
 const SKINS=[
  {id:'default',name:'Classic',cost:0,color:'#b3ff83'},
  ...[['red','#ff5555'],['blue','#459bff'],['purple','#ae65ff'],['pink','#ff79b8'],['orange','#ffa347'],['yellow','#ffee55'],['green','#43d987'],['cyan','#4fe4ee'],['white','#ffffff']].map(([id,color])=>({id,name:id[0].toUpperCase()+id.slice(1),cost:10,color})),
@@ -404,7 +530,7 @@ powerBar.innerHTML='<button id="shopButton">Shop</button><span id="powerButtons"
 document.querySelector('.controls').prepend(powerBar);
 const shopPanel=document.createElement('section');shopPanel.id='skinShop';shopPanel.className='room-panel';shopPanel.hidden=true;
 shopPanel.setAttribute('role','dialog');shopPanel.setAttribute('aria-modal','true');shopPanel.setAttribute('aria-label','Snake skin shop');
-shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
+shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from other snakes for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat an opponent of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size opponent, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
 document.body.append(shopPanel);
 const shopEl=id=>document.getElementById(id);
 function saveShop(){if(net.role==='guest')return;try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopProfile));}catch{}}
@@ -436,7 +562,7 @@ function purchaseSkin(index,id){
 function powerRequest(index,action,id){
  if(net.role==='guest'){net.action(action,id);return;}
  if(action==='skin')purchaseSkin(index,id);else usePower(players[index],action);
- renderShop();renderPowerButtons();
+ if(net.firebase)net.changed();renderShop();renderPowerButtons();
 }
 function renderPowerButtons(){
  const indices=net.role==='guest'?[1]:net.role==='host'?[0]:players.map((_,i)=>i);

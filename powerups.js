@@ -1,5 +1,5 @@
 'use strict';
-// The host owns the shared wallet, unlocks, timers, and all gameplay actions.
+// Each device keeps its own wallet, unlocks, and player power controls.
 const SKINS=[
  {id:'default',name:'Classic',cost:0,color:'#b3ff83'},
  ...[['red','#ff5555'],['blue','#459bff'],['purple','#ae65ff'],['pink','#ff79b8'],['orange','#ffa347'],['yellow','#ffee55'],['green','#43d987'],['cyan','#4fe4ee'],['white','#ffffff']].map(([id,color])=>({id,name:id[0].toUpperCase()+id.slice(1),cost:10,color})),
@@ -27,7 +27,7 @@ powerBar.innerHTML='<button id="shopButton">Shop</button><span id="powerButtons"
 document.querySelector('.controls').prepend(powerBar);
 const shopPanel=document.createElement('section');shopPanel.id='skinShop';shopPanel.className='room-panel';shopPanel.hidden=true;
 shopPanel.setAttribute('role','dialog');shopPanel.setAttribute('aria-modal','true');shopPanel.setAttribute('aria-label','Snake skin shop');
-shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from rivals for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat a rival of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size rival, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
+shopPanel.innerHTML='<h2>Snake skin shop</h2><p class="shop-wallet" id="shopWallet"></p><label>Equip for<select id="shopPlayer"></select></label><p class="power-help">Colors: 10 XP. Metals and patterns: 20 XP. Devil: 50 XP. Invisible: 70 XP. Angel: 100 XP. Buy once, equip anytime. In online play, your wallet and unlocks stay on this device. Online play continues while you shop.</p><p class="power-help">↑ Boost: twice as fast for 5 seconds; 30-second cooldown from activation. ★ Invisible: hidden from other snakes for 30 seconds, then a 30-second wait. You can still be eaten. 😈 Devil: arm one bite to eat an opponent of any size; five bites per 20 minutes of game time. Angel: 10% faster, 30-second invisibility followed by a 30-second cooldown, and a 10-second Angel Curse that eats any size opponent, followed by a 30-second cooldown.</p><div id="shopItems" class="shop-grid"></div><p id="shopStatus" role="status" aria-live="polite"></p><div class="actions"><button id="closeShop">Back to game</button></div>';
 document.body.append(shopPanel);
 const shopEl=id=>document.getElementById(id);
 function saveShop(){if(net.role==='guest')return;try{localStorage.setItem(SHOP_KEY,JSON.stringify(shopProfile));}catch{}}
@@ -59,7 +59,7 @@ function purchaseSkin(index,id){
 function powerRequest(index,action,id){
  if(net.role==='guest'){net.action(action,id);return;}
  if(action==='skin')purchaseSkin(index,id);else usePower(players[index],action);
- renderShop();renderPowerButtons();
+ if(net.firebase)net.changed();renderShop();renderPowerButtons();
 }
 function renderPowerButtons(){
  const indices=net.role==='guest'?[1]:net.role==='host'?[0]:players.map((_,i)=>i);
