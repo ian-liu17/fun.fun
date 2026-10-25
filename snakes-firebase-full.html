@@ -90,7 +90,7 @@ body{height:100svh;height:100dvh}
 <div class="controls"><p id="controlHint"><kbd>WASD</kbd> / <kbd>Arrows</kbd> or pointer</p><p>P = pause &middot; Blue = 5 pearls &middot; Purple = 10 &middot; King = +5 XP</p><a href="index.html">Arcade home</a></div>
 </main>
 <section id="roomPanel" class="room-panel" aria-label="Online room" hidden>
-<h2>Play with a friend</h2><p>Host a game, share your five-character code, and wait for your friend to join.</p>
+<h2>Play with a friend</h2><p class="badge">5-CHARACTER ROOM CODES</p><p>Host a game, share your five-character code, and wait for your friend to join.</p>
 <label>Your name<input id="onlineName" maxlength="16" placeholder="Your name" autocomplete="nickname"></label>
 <div class="actions"><button id="hostRoom" class="primary">Host Game</button></div>
 <div id="joinFields"><label>Room code<input id="roomCode" maxlength="5" minlength="5" placeholder="ABCDE" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:5px"></label><div class="actions"><button id="joinRoom">Join Game</button></div></div>
@@ -98,7 +98,7 @@ body{height:100svh;height:100dvh}
 <p id="roomStatus" role="status" aria-live="polite">Host a game or enter your friend's code.</p>
 <div class="actions"><button id="beginOnline" class="primary" hidden disabled>Start Game</button><button id="leaveRoom">Back to local game</button></div>
 <p>Two players per room. The host starts the game once their friend joins. Keep the host's tab open.</p>
-</section><script>
+</section><script data-online-version="firebase-5char-2">
 /* Firebase rooms: host a game or join with a five-character code. */
 'use strict';
 function createOnlineSession(){
