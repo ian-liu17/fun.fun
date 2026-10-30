@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#f6f3e9">
   <meta name="description" content="Fun.fun is a free online game arcade. Play Cat Sprint and Snake Arena in your browser—run, jump, dodge, gobble pearls, and challenge rivals. No downloads needed.">
   <meta name="robots" content="index,follow,max-image-preview:large">
-  <link rel="canonical" href="https://ian-liu17.github.io/my-arcade/fun.fun.html">
+  <link rel="canonical" href="https://ian-liu17.github.io/fun.fun/fun.fun.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Fun.fun">
   <meta property="og:title" content="Fun.fun — Free Online Games">
   <meta property="og:description" content="Play Cat Sprint and Snake Arena in your browser for free. No downloads needed.">
-  <meta property="og:url" content="https://ian-liu17.github.io/my-arcade/fun.fun.html">
+  <meta property="og:url" content="https://ian-liu17.github.io/fun.fun/fun.fun.html">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Fun.fun — Free Browser Games">
   <meta name="twitter:description" content="Run with a cat or challenge rival snakes. Play free at Fun.fun!">
@@ -22,11 +22,11 @@
       "@type": "WebPage",
       "name": "Fun.fun — Free Online Games",
       "description": "Fun.fun is a free browser arcade featuring Cat Sprint and Snake Arena.",
-      "url": "https://ian-liu17.github.io/my-arcade/fun.fun.html",
+      "url": "https://ian-liu17.github.io/fun.fun/fun.fun.html",
       "isPartOf": {
         "@type": "WebSite",
         "name": "My Arcade",
-        "url": "https://ian-liu17.github.io/my-arcade/"
+        "url": "https://ian-liu17.github.io/fun.fun/"
       },
       "mainEntity": [
         {
@@ -311,9 +311,9 @@
     <section class="home-screen" id="home-screen">
       <div class="home-intro">
         <h2>Choose your game</h2>
-        <p>Run with a speedy cat or challenge rival snakes in the arena. Pick a game and play!</p>
+        <p>Build your own block world, run with a speedy cat, or challenge rival snakes. Pick a game and play!</p>
       </div>
-      <div class="game-picks">
+      <div class="game-picks">        <button class="game-pick" type="button" data-open-game="block"><span class="game-icon" aria-hidden="true">&#129521;</span><strong>Blockhaven</strong><span>Explore a blocky world. Collect, craft, and build with a 20-slot backpack and bundles.</span></button>
         <button class="game-pick" type="button" data-open-game="cat">
           <span class="game-icon" aria-hidden="true">🐈</span>
           <strong>Cat Sprint</strong>
@@ -435,6 +435,7 @@
       let lastClick = 0;
       let activeGame = "home";
       function showGame(game) {
+        if (game === 'block') { location.assign('blockhaven.html?v=1'); return; }
         activeGame = game;
         homeScreen.hidden = game !== "home";
         gameNav.hidden = game === "home";
@@ -813,7 +814,7 @@
       document.getElementById("duck-button").addEventListener("pointerdown", event => { event.preventDefault(); duck(); });
       startButton.addEventListener("click", startGame);
       const requestedGame = new URLSearchParams(location.search).get("game");
-      showGame(["cat", "snake"].includes(requestedGame) ? requestedGame : "home");
+      showGame(["cat", "snake", "block"].includes(requestedGame) ? requestedGame : "home");
 
       renderScores();
       draw();

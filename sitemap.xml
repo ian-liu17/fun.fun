@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ian-liu17.github.io/my-arcade/</loc>
+    <loc>https://ian-liu17.github.io/fun.fun/</loc>
   </url>
   <url>
-    <loc>https://ian-liu17.github.io/my-arcade/fun.fun.html</loc>
+    <loc>https://ian-liu17.github.io/fun.fun/fun.fun.html</loc>
   </url>
   <url>
-    <loc>https://ian-liu17.github.io/my-arcade/snakes.html</loc>
+    <loc>https://ian-liu17.github.io/fun.fun/snakes.html</loc>
+  </url>
+  <url>
+    <loc>https://ian-liu17.github.io/fun.fun/blockhaven.html</loc>
   </url>
 </urlset>
