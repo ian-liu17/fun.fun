@@ -313,7 +313,7 @@
         <h2>Choose your game</h2>
         <p>Build your own block world, run with a speedy cat, or challenge rival snakes. Pick a game and play!</p>
       </div>
-      <div class="game-picks">        <button class="game-pick" type="button" data-open-game="block"><span class="game-icon" aria-hidden="true">&#129521;</span><strong>Blockhaven</strong><span>Explore a blocky world. Collect, craft, and build with a 20-slot backpack and bundles.</span></button>
+      <div class="game-picks">        <button class="game-pick" type="button" data-open-game="block"><span class="game-icon" aria-hidden="true">&#129521;</span><strong>Blockhaven</strong><span>A first-person block world. Mine, build, craft fishing rods, and fish with a 20-slot backpack.</span></button>
         <button class="game-pick" type="button" data-open-game="cat">
           <span class="game-icon" aria-hidden="true">🐈</span>
           <strong>Cat Sprint</strong>
@@ -435,7 +435,7 @@
       let lastClick = 0;
       let activeGame = "home";
       function showGame(game) {
-        if (game === 'block') { location.assign('blockhaven.html?v=3'); return; }
+        if (game === 'block') { location.assign('blockhaven.html?v=4'); return; }
         activeGame = game;
         homeScreen.hidden = game !== "home";
         gameNav.hidden = game === "home";
