@@ -347,13 +347,6 @@
           <div class="overlay-card">
             <h2 id="overlay-title">Ready, kitty?</h2>
             <p id="overlay-message">Jump over the cactuses and duck or leap past the low-flying birds. The cat runs all by itself!</p>
-            <form class="score-form" id="score-form" hidden>
-              <label for="player-name">Add your name to the leaderboard</label>
-              <div class="score-form-row">
-                <input id="player-name" name="player-name" maxlength="16" placeholder="Kitty" autocomplete="nickname" required>
-                <button class="primary" type="submit">Save score</button>
-              </div>
-            </form>
             <button class="primary" id="start-button" type="button">Start running</button>
           </div>
         </div>
@@ -404,7 +397,8 @@
       </div>
     </section>
   </main>
-  <script>
+  <script type="module">
+    import { beginRun, submissionForm, leaderboardButton } from "./leaderboard.js";
     (() => {
       const homeScreen = document.getElementById("home-screen");
       const gameNav = document.getElementById("game-nav");
@@ -420,11 +414,8 @@
       const titleEl = document.getElementById("overlay-title");
       const messageEl = document.getElementById("overlay-message");
       const startButton = document.getElementById("start-button");
-      const scoreForm = document.getElementById("score-form");
-      const playerNameInput = document.getElementById("player-name");
       const statusEl = document.getElementById("status");
       const leaderboardEl = document.getElementById("leaderboard");
-      const emptyLeaderboard = document.getElementById("leaderboard-empty");
       const groundY = 330;
       const cat = { x: 155, y: groundY, vy: 0, jumping: false, ducking: false, frame: 0 };
       const world = {
@@ -680,6 +671,9 @@
           catBox.bottom > birdBox.top && catBox.top < birdBox.bottom;
       }
 
+      let cloudRun = null, startingRun = false;
+      const cloudSubmission = submissionForm(overlay.querySelector('.overlay-card'), "cat");
+      leaderboardButton(document.querySelector("header") || document.body, "cat");
       function finishRun() {
         world.running = false;
         world.over = true;
@@ -689,9 +683,7 @@
         messageEl.textContent = `You ran ${meters} meters. Want to try for a new best?`;
         startButton.textContent = "Run again";
         overlay.hidden = false;
-        scoreForm.dataset.score = String(meters);
-        scoreForm.hidden = meters <= 0;
-        if (meters > 0) playerNameInput.focus();
+        cloudSubmission.show(cloudRun, meters);
       }
 
       function update() {
@@ -724,10 +716,21 @@
           scoreEl.textContent = String(Math.floor(world.distance / 12));
         }
         draw();
-        requestAnimationFrame(update);
+
       }
 
-      function startGame() {
+      async function startGame() {
+        if (startingRun || world.running) return;
+        startingRun = true;
+        startButton.disabled = true;
+        statusEl.textContent = "Signing in and starting ranked run…";
+        try { cloudRun = await beginRun("cat"); }
+        catch (error) {
+          statusEl.textContent = `Could not start: ${error.message}`;
+          startingRun = false; startButton.disabled = false; return;
+        }
+        startingRun = false; startButton.disabled = false;
+        cloudSubmission.reset();
         world.running = true;
         world.over = false;
         world.distance = 0;
@@ -745,54 +748,10 @@
         canvas.focus();
       }
 
-      function readScores() {
-        try {
-          const scores = JSON.parse(localStorage.getItem("catSprintLeaderboard") || "[]");
-          return Array.isArray(scores) ? scores.filter(entry =>
-            entry && typeof entry.name === "string" && Number.isFinite(entry.score)
-          ).slice(0, 5) : [];
-        } catch (error) {
-          console.error("Could not read the Cat Sprint leaderboard.", error);
-          return [];
-        }
-      }
-
-      function renderScores() {
-        const scores = readScores().sort((a, b) => b.score - a.score).slice(0, 5);
-        leaderboardEl.replaceChildren();
-        emptyLeaderboard.hidden = scores.length > 0;
-        for (const entry of scores) {
-          const item = document.createElement("li");
-          const name = document.createTextNode(entry.name);
-          const score = document.createElement("span");
-          score.textContent = `${entry.score} m`;
-          item.append(name, score);
-          leaderboardEl.append(item);
-        }
-      }
-
-      scoreForm.addEventListener("submit", event => {
-        event.preventDefault();
-        const score = Number(scoreForm.dataset.score);
-        const name = playerNameInput.value.trim().slice(0, 16) || "Kitty";
-        const scores = readScores();
-        scores.push({ name, score });
-        scores.sort((a, b) => b.score - a.score);
-        try {
-          localStorage.setItem("catSprintLeaderboard", JSON.stringify(scores.slice(0, 5)));
-          scoreForm.hidden = true;
-          statusEl.textContent = "Score saved!";
-          renderScores();
-        } catch (error) {
-          console.error("Could not save the Cat Sprint leaderboard.", error);
-          statusEl.textContent = "Could not save leaderboard on this device";
-        }
-      });
-
       window.addEventListener("keydown", event => {
         const key = event.key.toLowerCase();
         if (activeGame !== "cat") return;
-        if (event.target === playerNameInput) return;
+        if (event.target.closest("input, form, dialog")) return;
         if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) event.preventDefault();
         if (!world.running && (key === "enter" || key === " ")) {
           startGame();
@@ -816,9 +775,18 @@
       const requestedGame = new URLSearchParams(location.search).get("game");
       showGame(["cat", "snake", "block"].includes(requestedGame) ? requestedGame : "home");
 
-      renderScores();
+      leaderboardEl.parentElement.hidden = true;
       draw();
-      requestAnimationFrame(update);
+      // Fixed 60 Hz simulation: score must not depend on display refresh rate.
+      let lastFrame = 0, accumulator = 0;
+      function frame(now) {
+        if (!lastFrame) lastFrame = now;
+        accumulator += Math.min((now - lastFrame) / 1000, 0.1);
+        lastFrame = now;
+        while (accumulator >= 1 / 60) { update(); accumulator -= 1 / 60; }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
     })();
   </script>
 </body>
