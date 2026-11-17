@@ -15,7 +15,7 @@ function toast(text){$('message').textContent=text;$('message').classList.add('v
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({version:1,voxels:Array.from(voxels),player,inventory,stats,tool,won,time}));$('save').textContent='3D expedition saved on this device';}catch{$('save').textContent='Session only · browser storage unavailable';}}
 function generate(){const random=rng(94721);voxels.fill(0);for(let z=0;z<SIZE;z++)for(let x=0;x<SIZE;x++){let top=terrain(x,z);if(x>=31&&x<=40&&z>=6&&z<=15)top=7;for(let y=0;y<=top;y++)put(x,y,z,y===top?1:y>top-3?2:3);}
  // A descending tunnel leads into a crystal chamber under the rocky hill.
- for(let z=16;z<=33;z++){const floor=Math.max(2,9-Math.floor((32-z)/2));for(let x=27;x<=29;x++){put(x,floor,z,3);for(let y=floor+1;y<=(z>=30?23:floor+3);y++)put(x,y,z,0);}}
+ for(let z=16;z<=33;z++){const floor=z>=30?terrain(28,z):Math.max(2,9-Math.floor((32-z)/2));for(let x=27;x<=29;x++){put(x,floor,z,3);for(let y=floor+1;y<=(z>=30?23:floor+3);y++)put(x,y,z,0);}}
  for(let z=14;z<=23;z++)for(let x=22;x<=35;x++)for(let y=3;y<=6;y++)if(((x-28)/7)**2+((z-18)/6)**2<1.1)put(x,y,z,0);
  for(const [x,y,z]of [[24,3,18],[25,3,16],[32,3,19],[26,4,14],[34,4,17],[23,5,20]])put(x,y,z,6);
  for(let z=4;z<SIZE-4;z+=5)for(let x=4;x<SIZE-4;x+=5){if(random()<.25||x>20&&x<40&&z<34||x>=30&&z<17||Math.hypot(x-12,z-33)<3)continue;const top=terrain(x,z),trunk=4+Math.floor(random()*2);for(let y=top+1;y<=top+trunk;y++)put(x,y,z,4);for(let dy=-1;dy<=2;dy++)for(let dz=-2;dz<=2;dz++)for(let dx=-2;dx<=2;dx++)if(Math.abs(dx)+Math.abs(dz)+Math.abs(dy)<5&&at(x+dx,top+trunk+dy,z+dz)===0)put(x+dx,top+trunk+dy,z+dz,5);}
