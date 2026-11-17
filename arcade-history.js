@@ -1,0 +1,12 @@
+'use strict';
+(()=>{
+ const games={mine:{name:'MINE!!!',url:'mine.html',icon:'⛏',description:'Mine, craft, explore. Light your beacon.'},pacman:{name:'Pac-Man',url:'pacman.html',icon:'●',description:'Clear the maze. Outrun the ghosts.'},snake:{name:'Snake Arena',url:'snakes.html',icon:'〰',description:'Grow longer. Explore the arena.'},cat:{name:'Cat Sprint',url:'fun.fun.html?game=cat',icon:'🐈',description:'Run, jump and chase your best.'}};
+ const KEY='funfun.recently-played.v1';let memory=[];
+ function read(){try{const value=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(value))return value.filter(x=>x&&games[x.id]&&Number.isFinite(x.at)).sort((a,b)=>b.at-a.at).filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).slice(0,4);}catch{}return memory;}
+ function record(id){if(!games[id])return;memory=[{id,at:Date.now()},...read().filter(x=>x.id!==id)].slice(0,4);try{localStorage.setItem(KEY,JSON.stringify(memory));}catch{}render();}
+ function render(){const el=document.getElementById('recently-played');if(!el)return;const recent=read();el.innerHTML='';const heading=document.createElement('h2');heading.textContent='Recently played';el.append(heading);if(!recent.length){const p=document.createElement('p');p.textContent='Your next adventure starts here. Play a game and it will appear in this box.';el.append(p);return;}const list=document.createElement('div');list.className='recent-games';for(const row of recent){const game=games[row.id],a=document.createElement('a');a.href=game.url;const icon=document.createElement('span');icon.textContent=game.icon;icon.setAttribute('aria-hidden','true');const name=document.createElement('strong');name.textContent=game.name;const text=document.createElement('small');text.textContent='Play again →';a.append(icon,name,text);a.addEventListener('click',()=>record(row.id));list.append(a);}el.append(list);}
+ window.ArcadeHistory={record,read};
+ document.addEventListener('click',e=>{const target=e.target.closest('a,button[data-open-game]');if(!target)return;const href=target.getAttribute('href')||'',id=target.dataset.openGame||Object.keys(games).find(id=>href.split('?')[0]===games[id].url.split('?')[0]&&id!=='cat');if(games[id])record(id);});
+ const path=location.pathname.split('/').pop();if(path==='mine.html'){}else if(path==='pacman.html')record('pacman');else if(path==='snakes.html')record('snake');else if(new URLSearchParams(location.search).get('game')==='cat')record('cat');
+ window.addEventListener('pageshow',render);window.addEventListener('storage',render);render();
+})();
