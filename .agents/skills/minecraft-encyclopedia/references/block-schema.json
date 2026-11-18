@@ -1,0 +1,22 @@
+{
+ "$schema":"http://json-schema.org/draft-07/schema#",
+ "title":"MINE!!! canonical block record",
+ "type":"object",
+ "required":["id","name","namespace","edition","introduced_version","removed_version","last_verified_version","family","category","subcategory","special_mechanics","categories","variants","related_blocks","description","appearance","image","natural_generation","acquisition","tool","drops","crafting","properties","uses","warnings","tips","edition_differences","sources","verification_status"],
+ "additionalProperties":false,
+ "properties":{
+  "subcategory":{"type":["string","null"]},"special_mechanics":{"$ref":"#/definitions/strings"},
+  "id":{"type":"string","pattern":"^minecraft:[a-z0-9_]+$"},"name":{"type":"string","minLength":1},"namespace":{"const":"minecraft"},"edition":{"enum":["Java","Bedrock"]},"introduced_version":{"type":["string","null"]},"removed_version":{"type":["string","null"]},"last_verified_version":{"type":"string"},"family":{"type":"string"},"category":{"type":"string"},"categories":{"$ref":"#/definitions/strings"},"variants":{"$ref":"#/definitions/strings"},"related_blocks":{"$ref":"#/definitions/strings"},"description":{"type":"string"},
+  "appearance":{"type":"object","required":["description","palette","shape"],"properties":{"description":{"type":"string"},"palette":{"$ref":"#/definitions/strings"},"shape":{"type":"string"}}},
+  "image":{"type":"object","required":["path","alt","license","provenance","fallback"],"properties":{"path":{"type":"string"},"alt":{"type":"string","minLength":1},"license":{"type":"string","minLength":1},"provenance":{"type":"string","minLength":1},"fallback":{"type":"boolean"}}},
+  "natural_generation":{"type":"object","required":["dimensions","biomes","structures","vertical_range"],"properties":{"dimensions":{"$ref":"#/definitions/strings"},"biomes":{"$ref":"#/definitions/strings"},"structures":{"$ref":"#/definitions/strings"},"vertical_range":{"type":["string","null"]}}},
+  "acquisition":{"$ref":"#/definitions/strings"},
+  "tool":{"type":"object","required":["preferred","minimum_tier","allowed","silk_touch","fortune","exceptions"],"properties":{"preferred":{"type":"string"},"minimum_tier":{"type":["string","null"]},"allowed":{"$ref":"#/definitions/strings"},"silk_touch":{"type":["string","null"]},"fortune":{"type":["string","null"]},"exceptions":{"type":["string","null"]}}},
+  "drops":{"type":"array","items":{"type":"object","required":["name","note"],"properties":{"name":{"type":"string"},"note":{"type":"string"}}}},
+  "crafting":{"type":"array","items":{"type":"object","required":["type","grid","ingredients","output","workstation","conditions"],"properties":{"type":{"enum":["shaped","shapeless","smelting","stonecutting","smithing"]},"grid":{"type":"array","items":{"type":"array","items":{"anyOf":[{"type":"null"},{"$ref":"#/definitions/ingredient"}]}}},"ingredients":{"type":"array","items":{"$ref":"#/definitions/ingredient"}},"output":{"type":"integer","minimum":1},"workstation":{"type":"string"},"conditions":{"type":["string","null"]}}}},
+  "properties":{"type":"object","required":["hardness","blast_resistance","light","gravity","transparent","waterlogging","flammable","collision","renewable","redstone"],"properties":{"hardness":{"type":["number","null"]},"blast_resistance":{"type":["number","null"]},"light":{"type":["integer","null"],"minimum":0,"maximum":15},"gravity":{"type":["boolean","null"]},"transparent":{"type":["boolean","null"]},"waterlogging":{"type":["boolean","null"]},"flammable":{"type":["boolean","null"]},"collision":{"type":["string","null"]},"renewable":{"type":["boolean","null"]},"redstone":{"type":["string","null"]}}},
+  "uses":{"$ref":"#/definitions/strings"},"warnings":{"$ref":"#/definitions/strings"},"tips":{"$ref":"#/definitions/strings"},"edition_differences":{"$ref":"#/definitions/strings"},"obtainability":{"type":"string"},"rarity":{"type":["string","null"]},
+  "sources":{"type":"array","minItems":1,"items":{"type":"object","required":["title","url","accessed","scope"],"properties":{"title":{"type":"string"},"url":{"type":"string","pattern":"^https://"},"accessed":{"type":"string","pattern":"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},"scope":{"type":"string"}}}},"verification_status":{"type":"string","minLength":1}
+ },
+ "definitions":{"strings":{"type":"array","items":{"type":"string"}},"ingredient":{"type":"object","required":["id","name","count"],"properties":{"id":{"type":"string","pattern":"^minecraft:[a-z0-9_]+$"},"name":{"type":"string"},"count":{"type":"integer","minimum":1}}}}
+}

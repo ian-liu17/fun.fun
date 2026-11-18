@@ -1,0 +1,193 @@
+[
+  {
+    "id": "fundamentals",
+    "title": "How blocks work",
+    "icon": "◈",
+    "intro": "Start with the world beneath your feet.",
+    "guide": [
+      "Hardness measures breaking time; blast resistance measures resistance to explosions. They are different properties.",
+      "A placed block is not always obtainable as an inventory item. Air, fluids and technical states appear in the registry too.",
+      "Survival emphasizes gathering and progression; Creative provides building materials and flight. Adventure restricts interaction through map rules. Spectator is for observing the world. This field guide is distinct from the custom MINE!!! adventure rules."
+    ]
+  },
+  {
+    "id": "ground",
+    "title": "Natural ground",
+    "icon": "▧",
+    "intro": "The foundation of every adventure.",
+    "guide": [
+      "Learn the difference between a block that can be broken and a block that drops itself.",
+      "Use the researched entries for collection exceptions; unknown details remain explicitly unverified."
+    ]
+  },
+  {
+    "id": "stone",
+    "title": "Stone & deepslate",
+    "icon": "⬡",
+    "intro": "From your first shelter to a mountain fortress.",
+    "guide": [
+      "Compare hardness and blast resistance before choosing a building material.",
+      "A preferred tool does not guarantee the correct harvest tier. Check the allowed tools in each entry."
+    ]
+  },
+  {
+    "id": "ores",
+    "title": "Ores & minerals",
+    "icon": "◆",
+    "intro": "Find the resources that move your world forward.",
+    "guide": [
+      "Ore drops depend on the block, tool and enchantments. This catalog labels baseline registry drops separately.",
+      "Fortune and Silk Touch are special cases; never assume that every ore behaves identically."
+    ]
+  },
+  {
+    "id": "wood",
+    "title": "Wood families",
+    "icon": "▥",
+    "intro": "A palette of forests, from oak to pale oak.",
+    "guide": [
+      "Logs, planks and their derivatives have separate registry entries. Search a wood name to explore a family.",
+      "Crafting recipes are tied to this Java version; material alternatives are selectable in the recipe viewer."
+    ]
+  },
+  {
+    "id": "building",
+    "title": "Decorative construction",
+    "icon": "▦",
+    "intro": "Give your next build a little character.",
+    "guide": [
+      "Explore masonry, colored concrete, terracotta and wool.",
+      "Use comparison to inspect resistance, hardness and light without leaving the catalog."
+    ]
+  },
+  {
+    "id": "glass",
+    "title": "Glass & ice",
+    "icon": "◇",
+    "intro": "Light, color and frozen landscapes.",
+    "guide": [
+      "Transparency in the registry is an engine property, not a promise of a clear texture.",
+      "Collection behavior requires separate verification. Look for Silk Touch notes."
+    ]
+  },
+  {
+    "id": "plants",
+    "title": "Plants & crops",
+    "icon": "✿",
+    "intro": "Bring the living world into your builds.",
+    "guide": [
+      "A crop block and its inventory item may have different identifiers.",
+      "Growth, biome and farming details are marked unverified unless researched for the individual entry."
+    ]
+  },
+  {
+    "id": "ocean",
+    "title": "Ocean & underwater",
+    "icon": "≈",
+    "intro": "Explore the world below the surface.",
+    "guide": [
+      "Coral, kelp, prismarine and aquatic blocks share this chapter.",
+      "Waterlogging and survival conditions vary per block. Do not infer them from appearance."
+    ]
+  },
+  {
+    "id": "geodes",
+    "title": "Amethyst geodes",
+    "icon": "⬢",
+    "intro": "A small world of crystals inside the stone.",
+    "guide": [
+      "Budding amethyst and ordinary amethyst blocks are distinct registry entries.",
+      "Breaking a crystal source and collecting a crystal are different actions; check individual notes."
+    ]
+  },
+  {
+    "id": "nether",
+    "title": "The Nether",
+    "icon": "♨",
+    "intro": "A different dimension. A different set of rules.",
+    "guide": [
+      "Progression: prepare equipment, build a safe portal shelter, then plan routes before gathering resources.",
+      "Check each researched block for dimension and hazard notes; dimension filters exclude unverified locations."
+    ]
+  },
+  {
+    "id": "end",
+    "title": "The End",
+    "icon": "✧",
+    "intro": "Beyond the stronghold, another world awaits.",
+    "guide": [
+      "Progression: prepare for the dragon, secure the central island, then explore gateways and outer islands.",
+      "Portal blocks and frames have special acquisition restrictions. Registry presence does not imply Survival availability."
+    ]
+  },
+  {
+    "id": "functional",
+    "title": "Workstations & storage",
+    "icon": "▣",
+    "intro": "Turn gathered resources into possibilities.",
+    "guide": [
+      "Crafting tables, furnaces and storage blocks support different tasks.",
+      "Recipes shown here are crafting recipes from the pinned dataset, plus explicitly sourced editorial smelting examples."
+    ]
+  },
+  {
+    "id": "redstone",
+    "title": "Redstone & automation",
+    "icon": "⌁",
+    "intro": "Make your builds do something.",
+    "guide": [
+      "Read inputs and outputs carefully before connecting a circuit.",
+      "Java and Bedrock redstone can differ. This baseline does not claim Bedrock compatibility."
+    ]
+  },
+  {
+    "id": "utility",
+    "title": "Light & utility",
+    "icon": "☀",
+    "intro": "The finishing touches that make a place home.",
+    "guide": [
+      "Light emission is listed on a 0–15 scale. State-dependent lighting needs additional verification.",
+      "Doors, signs and transport blocks may have placement or interaction behavior not captured in the registry."
+    ]
+  },
+  {
+    "id": "rare",
+    "title": "Rare & remarkable",
+    "icon": "✦",
+    "intro": "Strange discoveries with exceptional mechanics.",
+    "guide": [
+      "Archaeology blocks, trial structures and sculk need special handling.",
+      "Research first: a block that breaks easily may still be impossible to collect."
+    ]
+  },
+  {
+    "id": "technical",
+    "title": "Technical blocks",
+    "icon": "⌘",
+    "intro": "Behind the scenes of a block-built world.",
+    "guide": [
+      "This chapter includes air, fluids, portals and command or structure tooling.",
+      "Use explicit obtainability notes. Some entries represent internal states rather than inventory items."
+    ]
+  },
+  {
+    "id": "versions",
+    "title": "Versions & editions",
+    "icon": "⟳",
+    "intro": "Know which world you are reading about.",
+    "guide": [
+      "This release pins Java 1.21.4. It is not presented as the latest Minecraft release.",
+      "Bedrock data is not loaded. Choose Bedrock to see an honest empty state instead of relabeled Java facts."
+    ]
+  },
+  {
+    "id": "index",
+    "title": "Master index & glossary",
+    "icon": "☷",
+    "intro": "A place for every block, and a path back.",
+    "guide": [
+      "Hardness: resistance to breaking. Blast resistance: resistance to explosions.",
+      "Renewable: obtainable repeatedly without exhausting finite world generation; unknown here unless explicitly researched."
+    ]
+  }
+]

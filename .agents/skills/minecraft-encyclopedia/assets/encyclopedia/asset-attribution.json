@@ -1,0 +1,13 @@
+{
+  "assets": "assets/blocks/*.svg",
+  "creator": "MINE!!!",
+  "license": "CC0-1.0",
+  "type": "Original procedural schematic placeholders. Not authentic Minecraft textures.",
+  "verified_images": [],
+  "upstream": {
+    "name": "PrismarineJS minecraft-data",
+    "license": "MIT per upstream README; upstream notes some extracted sources may have additional terms.",
+    "commit": "9b995542ab4a17837dee785439954e43d031b33e",
+    "url": "https://github.com/PrismarineJS/minecraft-data/blob/9b995542ab4a17837dee785439954e43d031b33e/data/pc/1.21.4/"
+  }
+}

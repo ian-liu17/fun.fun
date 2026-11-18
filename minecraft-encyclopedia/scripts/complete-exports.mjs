@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import {writeReports} from '../../.agents/skills/minecraft-encyclopedia/scripts/report.mjs';
+const blocks=JSON.parse(fs.readFileSync('data/blocks.json','utf8')),chapters=JSON.parse(fs.readFileSync('data/chapters.json','utf8')),registry=JSON.parse(fs.readFileSync('data/upstream/blocks.json','utf8'));
+const report=writeReports('public',blocks,chapters,registry);
+const priorFile='data/upstream/previous-blocks.json';
+const prior=fs.existsSync(priorFile)?JSON.parse(fs.readFileSync(priorFile,'utf8')):null;
+const priorIds=new Set(prior?.map(b=>`minecraft:${b.name}`)||[]),currentIds=new Set(blocks.map(b=>b.id));
+const diff={edition:'Java',from:'1.21.3',to:'1.21.4',available:!!prior,added:prior?blocks.filter(b=>!priorIds.has(b.id)).map(b=>b.id):[],removed:prior?[...priorIds].filter(id=>!currentIds.has(id)):[],note:'Registry differences establish added/removed identities between these snapshots, not a complete mechanic changelog.'};
+fs.writeFileSync('data/version-diff.json',JSON.stringify(diff,null,2));fs.writeFileSync('public/version-diff.json',JSON.stringify(diff,null,2));
+fs.copyFileSync('public/chapters/stone.md','sample-chapter.md');
+console.log(`MINE!!! audit: ${report.covered}/${report.registry_total} IDs, ${report.entries_with_unverified_fields} entries with unverified fields, ${report.placeholder_images} missing authentic images.`);

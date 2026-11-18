@@ -1,0 +1,28 @@
+{
+  "edition": "Java",
+  "version": "1.21.4",
+  "source_commit": "9b995542ab4a17837dee785439954e43d031b33e",
+  "registry_total": 1095,
+  "covered": 1095,
+  "coverage": 100,
+  "missing": [],
+  "editorial_entries": 4,
+  "unverified_entries": 1091,
+  "authentic_images": 0,
+  "placeholder_images": 1095,
+  "chapters": 19,
+  "unknown_fields": [
+    "introduced_version",
+    "removed_version",
+    "variants",
+    "natural_generation.vertical_range",
+    "tool.fortune",
+    "properties.waterlogging",
+    "properties.flammable",
+    "properties.renewable",
+    "properties.redstone",
+    "rarity"
+  ],
+  "bedrock_coverage": 0,
+  "errors": []
+}

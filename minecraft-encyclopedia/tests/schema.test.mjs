@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const Ajv=require('ajv');
+const schema=JSON.parse(fs.readFileSync(new URL('../../.agents/skills/minecraft-encyclopedia/references/block-schema.json',import.meta.url),'utf8'));
+const blocks=JSON.parse(fs.readFileSync(new URL('../data/blocks.json',import.meta.url),'utf8'));
+test('Every canonical record conforms to the published JSON schema',()=>{const validate=new Ajv({allErrors:true}).compile(schema);for(const b of blocks)assert.ok(validate(b),`${b.id}: ${JSON.stringify(validate.errors)}`);});
+test('Schema rejects invented field types and malformed image metadata',()=>{const validate=new Ajv().compile(schema);const bad=structuredClone(blocks[0]);bad.properties.gravity='maybe';assert.equal(validate(bad),false);bad.properties.gravity=null;delete bad.image.alt;assert.equal(validate(bad),false);});
+test('Skill discovery metadata and supporting resources are present',()=>{const skill=new URL('../../.agents/skills/minecraft-encyclopedia/',import.meta.url);const text=fs.readFileSync(new URL('SKILL.md',skill),'utf8');const match=text.match(/^---\r?\n([\s\S]+?)\r?\n---/);assert.ok(match);assert.match(match[1],/^name: minecraft-encyclopedia$/m);assert.match(match[1],/^description: .{20,1024}$/m);assert.ok(!text.includes('[TODO:'));for(const file of ['references/data-quality.md','references/block-schema.json','scripts/generate.mjs','scripts/validate.mjs'])assert.ok(fs.existsSync(new URL(file,skill)));});
