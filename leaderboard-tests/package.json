@@ -1,0 +1,10 @@
+{
+  "name":"funfun-leaderboard-tests",
+  "private":true,
+  "type":"module",
+  "scripts":{
+    "test:unit":"node --test core.test.mjs",
+    "test:rules":"node run-rules.cjs"
+  },
+  "devDependencies":{"@firebase/rules-unit-testing":"5.0.0","firebase":"12.6.0","firebase-tools":"14.26.0"}
+}

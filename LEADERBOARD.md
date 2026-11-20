@@ -1,40 +1,82 @@
-# Firebase leaderboard on GitHub Pages
+# GitHub Pages leaderboard: rules and web SDK only
 
-1. Design: each game uses `runs_cat` / `scores_cat` or `runs_pacman` / `scores_pacman`. Runs contain exactly `uid, startedAt, finished, score`; best-score documents contain exactly `name, score, runId, updatedAt`. Score document IDs are Firebase Auth UIDs.
-2. Rules: paste the entire `firestore.rules` into Firebase Console > Firestore > Rules > Publish. These rules replace existing Firestore access: every other path and all deletes are denied. No rules have been published by this local edit.
-3. Front end: `firebase-config.js` reuses the public web config found in `.validation/firebase-check.html` for `fun-fun-142e6`. Confirm this is your intended project. Enable Anonymous Auth for the automatic signed-in run flow. Google sign-in is optional; enable Google Auth to use the leaderboard's Google button. Add your actual GitHub Pages/custom domain to Auth authorized domains. Sign in with Google before starting a run to keep scores with that identity; switching accounts during a run prevents its submission. Anonymous identities depend on the browser's stored account.
-4. Flow: starting a game restores Auth or signs in anonymously, then awaits the server-confirmed run creation. Game over shows a name/submit form. Submitting reads the current best from the server, then commits one batch: finalize the run and, only for a strictly better score, set the best-score document. Lower/equal runs are finalized without changing the best. Submit before restarting. Failed batches leave the run available for retry; if another tab increased the best, retry reads it again. No client clock is trusted by rules.
-5. Leaderboards: landing pages and both game overlays have a Leaderboard button with Cat/Pac-Man tabs. Reads use `orderBy('score', 'desc'), limit(10)` and highlight the current UID when present. Names render through `textContent`.
-6. Publish these source files through your usual GitHub Pages workflow: `index.html`, `fun.fun.html`, `pacman.html`, `pacman.js`, `leaderboard.js`, `firebase-config.js`. No server or Sites hosting is used.
+This implementation uses Firebase Auth and the Firestore web SDK from the static site. It deploys no application server, Cloud Functions or Vercel backend. The Node/Java tools in `leaderboard-tests/` are local test tools only.
 
-## Limits selected from the game code
+## 1. Design and limits
 
-| Game | MAX_PER_SECOND | Hard cap | Reason |
+For each of `cat` and `pacman`:
+
+- `runs_{game}/{runId}` contains exactly `uid`, `startedAt`, `finished`, `score`.
+- `scores_{game}/{uid}` contains exactly `name`, `score`, `runId`, `updatedAt`.
+
+| Game | MAX_PER_SECOND | Hard cap | Basis in the current code |
 | --- | ---: | ---: | --- |
-| Cat Sprint | 6 meters | 100,000 meters | Score is floor(distance/12); distance increases by speed/10 per update, capped at speed 10.5. Fixed 60 updates/second gives a maximum 5.25 meters/second. Six allows margin. The former per-display-frame simulation was made fixed-rate. |
-| Pac-Man | 2,000 points | 10,000,000 points | Player moves no faster than one tile per .082 seconds. Dots award 10/50, ghost combos 200/400/800/1,600, fruit up to 5,000. The generous average rate accommodates bursts and repeated ghost captures. |
+| Cat Sprint | 6 meters/s | 100,000 meters | `world.distance += world.speed / 10`, speed <= 10.5, score = floor(distance / 12), fixed 60 Hz simulation. The maximum is 60 × 10.5 / 10 / 12 = 5.25 m/s; 6 provides margin. |
+| Pac-Man | 2,000 points/s | 10,000,000 points | Movement is no faster than one tile per 0.082 s. Pellets award 10/50, ghost combos 200/400/800/1,600 and fruit up to 5,000. The generous lifetime-average allowance accommodates burst rewards and repeated captures; it is not a claim that 2,000 is the exact maximum achievable rate. |
 
-Both games are endless. Hard caps are leaderboard policy limits, not proven maximum possible scores. Scores above them cannot be submitted. The time bound includes pauses, network delays, and time spent on the submission form. It uses Firestore's server time, including fractional seconds.
+Both games are endless. These hard caps are ranking-policy limits, not maximum possible legitimate lifetime scores. A result above a cap is not eligible. Elapsed time is Firestore server time from run creation through submission, including pauses and waiting on the game-over screen. Fractional seconds are preserved using Duration.seconds() and Duration.nanos().
 
-## What the rules reject
+## 2. Firestore rules
 
-- Unauthenticated writes, another UID's run updates or score writes, and reads of another UID's run.
-- Backdated/future client start timestamps, nonzero starting scores, or already-finished newly created runs.
-- Extra/missing fields, wrong score types, negative scores, invalid name types/lengths, or client-selected update timestamps.
-- Changes to a run's UID/start time, intermediate score edits, reopening or editing a finished run.
-- Scores above either the game cap or the elapsed-time allowance.
-- Score submissions referencing missing, unfinished, another player's, or another game's run, or a run with a different score.
-- Reusing an already-finished run for another leaderboard write. A best-score write requires a previously existing unfinished run to become finished in the same atomic commit, using both `get()` and `getAfter()`.
-- Reducing a personal best, deleting any document, and accessing any unlisted collection.
+Paste the **entire root `firestore.rules` file** into **Firebase console > Firestore > Rules > Publish**. Committing or pushing this file to GitHub does not publish Firestore rules. This work does not change production rules automatically.
 
-## What this cannot prove
+Only the four named collections are permitted; everything else and all client deletes are denied. Run reads belong to the owner; score reads are public. Extra/missing fields, invalid types, bad ownership, mutable start times, over-cap results, and implausible lifetime rates are rejected.
 
-A modified browser, console script, bot, or direct SDK caller can create a run, wait long enough, and invent any score within its allowance. Pausing/waiting pads that allowance. Rules cannot verify movement, collisions, lives, speed, fruit collection, or actual play. Players can open multiple runs or create many anonymous identities; there is no per-person uniqueness, abuse quota, or reliable protection against database-cost spam. Display names are not verified identities. Existing corrupt score documents are not cleaned up by publishing rules. Trusted Admin SDK access bypasses rules.
+Best-score writes use both `get()` and `getAfter()` on the matching game's run: it must exist unfinished before the commit and be finished with the same owner and score afterward. Thus a best-score write must atomically finalize that run; an old finished run cannot be replayed. Existing bests cannot decrease. Equal-score writes are allowed by the rules as requested, but the frontend only writes strictly better bests.
 
-The real fix is a trusted authoritative server that calculates or validates the score from game state and writes the leaderboard, with direct client score writes denied. GitHub Pages only serves static files and cannot host that server; it would require a separate service, outside this requested setup. No secret or service-account keys are included; Firebase's public web config is intentionally public.
+Snake multiplayer uses Realtime Database, not Firestore. This file does not alter its separate database rules.
 
-## Verification
+## 3. Frontend flow
 
-`node --check leaderboard.js`, `node --check firebase-config.js`, `node --check pacman.js`, and `node .validation/leaderboard-test.cjs` passed (Node was run through the installed VS Code executable). The flow tests cover run creation, atomic best-score writes, lower scores, duplicate submission, malformed input, failed-commit retry, and Cat module syntax.
+`leaderboard-core.js` contains the testable SDK flow; `leaderboard.js` imports the real Firebase web SDK and renders the UI.
 
-The browser smoke test `.validation/leaderboard-browser.cjs` was attempted but did not pass: the browser returned no page output in this environment, and direct Firebase CDN access was unavailable. No successful browser, emulator, or live Firestore enforcement test is claimed. Before production use, test the rules in the Firebase Emulator Suite or Rules Playground with separate authenticated UIDs, and verify a real run and top-10 read after publishing.
+1. Restore Auth; if no account exists, sign in anonymously. Anonymous Auth must be enabled. Google sign-in is optional and must be configured if used. Add the actual GitHub Pages/custom domain to Auth authorized domains. Sign in with the desired account before starting; changing accounts prevents submission of an old identity's run.
+2. Validate the game name against Cat/Pac-Man; create a random run ID with `uid`, `serverTimestamp()`, `finished: false`, `score: 0`. Gameplay starts only after creation is acknowledged.
+3. At game over, require the same signed-in UID, a valid integer score and a 1–20-character trimmed name. Coordinate duplicate submissions locally.
+4. Read the current personal best using `getDocFromServer()`. In one `writeBatch()`, update the run with only `{finished: true, score}` and, only for a strictly better best, set the exact score document with a server timestamp.
+5. Mark the run submitted only after commit succeeds. Failed writes remain retryable. If another tab raised the best, retry reads it again and can finalize the lower result without changing the best.
+
+Client validation is for UX. Attackers can bypass it; Firestore rules are the enforcement boundary.
+
+## 4. Leaderboard UI and tests
+
+Landing and game-over screens have a Leaderboard button. The dialog has separate Cat/Pac-Man tabs using `orderBy('score', 'desc')`, `limit(10)`. The current Auth UID is highlighted when present in the top ten. Names use `textContent`, so names cannot inject HTML. Stale responses cannot overwrite a newly selected game tab.
+
+Validated November 20, 2026:
+
+- **35 actual Firestore emulator tests passed**, using `demo-funfun-leaderboard`, never the production project. These include legitimate writes as well as denied attacks, owner/private reads, timestamp forgery, both bounds, schema violations, replay, cross-game references, missing runs, monotonic bests, atomic rollback, competing-tab races, default denial and all deletes.
+- **14 client-flow tests passed**, including sign-in coordination, exact fields, atomic writes, lower/equal scores, retries, duplicate submissions and account changes.
+- **7 browser UI checks passed** with an isolated SDK fixture: top-ten ordering, highlighted row, tab switching, inert hostile names, phone layout, actual Cat game-over submission, and both game-over leaderboard buttons. These browser fixture tests do not substitute for the real emulator rules tests.
+- JavaScript syntax checks passed. No production run or score documents were created for testing.
+
+To repeat, install Node.js 22+ and Java 21, then:
+
+```powershell
+cd leaderboard-tests
+npm ci
+npm run test:unit
+npm run test:rules
+```
+
+The emulator test runner uses only a demo project, copies the current root rules into an ignored local file and records verbose logs in ignored `rules-results.log`. The browser test also needs Playwright installed (or the existing sibling `minecraft-encyclopedia` development dependencies) and Edge, with `BROWSER_PATH` available to override the executable path.
+
+## What is blocked
+
+- Unauthenticated writes and another UID's run/score writes or private run reads.
+- Forged historical/future start times, nonzero starting scores and already-finished new runs.
+- Extra/missing fields, invalid score/name/run ID types and lengths, and client update timestamps that do not match server time.
+- Intermediate run edits, UID/start-time changes, reopening or changing finished runs.
+- Negative/fractional scores, results above the hard cap or elapsed-time allowance.
+- Missing, unfinished, foreign, other-game or mismatched-score run references.
+- Finished-run replay, separate finish-then-score writes and create-and-finish bypasses.
+- Decreasing a personal best, racing a lower stale best over a higher one, any client delete, or accessing unlisted/nested collections.
+
+## What cannot be stopped
+
+A modified client, direct web SDK caller or bot can start a run, wait long enough and fabricate any score under the hard/time caps. Waiting, pauses and delayed submission increase the allowance. These rules do not verify actual movement, collisions, lives, pellets, ghosts or game state. They do not prove one human per UID, prevent multiple anonymous accounts, or provide comprehensive spam/cost protection. Names and all score documents are public. Publishing new rules does not repair existing forged or corrupt data; trusted Admin SDK access bypasses rules.
+
+The real fix is a trusted authoritative server that calculates or validates gameplay and writes the score, with direct client score writes denied. GitHub Pages cannot host that server. It would require a separate backend, outside this requested setup.
+
+`firebase-config.js` contains only the existing public Firebase web configuration. No service-account key, private key or secret credential is added to the repository.
+
+References: [atomic write validation](https://firebase.google.com/docs/firestore/manage-data/transactions#data_validation_for_atomic_operations), [rules emulator testing](https://firebase.google.com/docs/firestore/security/test-rules-emulator), [duration precision](https://firebase.google.com/docs/reference/rules/rules.Duration).

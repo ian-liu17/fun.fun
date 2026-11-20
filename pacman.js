@@ -1,4 +1,4 @@
-import { beginRun, submissionForm } from "./leaderboard.js";
+import { beginRun, submissionForm } from "./leaderboard.js?v=security-2";
 (() => {
   'use strict';
   // 28 x 31 tile maze. The tunnel is the only wrapping row.
