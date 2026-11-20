@@ -24,3 +24,11 @@ node tests/mine-browser.cjs
 ```
 
 The game needs WebGL and displays a clear compatibility message if a context cannot be created. Core assets are local; the pre-existing ranked leaderboards and online Snake features retain their existing network requirements.
+
+## Living world update — November 20, 2026
+
+The fixed afternoon and three distant slime cubes have been replaced by a saved six-minute day/night cycle and recognizable 3D mobs. Day lasts 3:00; sunset lasts 0:30; night starts at 3:30 and lasts 2:00; sunrise lasts 0:30. The HUD shows the current day/phase and a countdown. The clock measures active play independently of rendering speed, and pauses in menus and when the tab is hidden. Press N or use Wait until night/day to skip ahead.
+
+Eight peaceful animals (sheep, cows, pigs and chickens) spawn near camp and wander on actual terrain. Press F or Find a mob to look toward a nearby creature; R greets peaceful animals. Four zombies/slimes spawn at night, approach the player, and can cause contact damage. R or left-click defends against hostile mobs. Daylight removes night mobs. All models and animations are original; mob species/positions/health and the per-night spawn marker are saved with the world. Legacy saves receive the new animals without clearing the terrain or inventory.
+
+Validation: 11 clock/mob unit tests and 14 full game browser checks, including day/night lighting, moon/stars, finder controls, saved mobs, no duplicate night spawns, morning cleanup, peaceful contact, combat and collision. Day/night screenshots were inspected. The complete encyclopedia remains unchanged; its packaged game copies are refreshed alongside the root arcade.
