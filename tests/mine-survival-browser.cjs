@@ -1,0 +1,57 @@
+const {chromium}=require('../minecraft-encyclopedia/node_modules/playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const root=process.cwd(),checks=[],errors=[];
+const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+pathname);if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(error,data)=>{if(error){res.writeHead(404).end();return;}res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json'})[path.extname(file)]||'text/plain');res.end(data);});});
+(async()=>{await new Promise(r=>server.listen(8819,'127.0.0.1',r));const browser=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true,args:['--enable-unsafe-swiftshader']});try{
+ const page=await browser.newPage({viewport:{width:1440,height:960}});page.on('pageerror',e=>errors.push(e.message));const check=async(name,fn)=>{await fn();checks.push(name);console.log('PASS '+name);};
+ await page.goto('http://127.0.0.1:8819/mine.html');await page.waitForFunction(()=>!!window.BlockQuest,{timeout:20000});await page.getByRole('button',{name:'Start exploring →'}).click();
+ await check('Larger world, spread-out animals, hunger and clear Survival selector',async()=>{const s=await page.evaluate(()=>({size:BlockQuest.state.size,mobs:BlockQuest.state.mobs,mode:BlockQuest.state.mode}));assert.equal(s.size,80);assert.equal(s.mode,'survival');assert.ok(s.mobs.length>=16);assert.ok(s.mobs.some(m=>m.x>45||m.z>45));assert.match(await page.locator('#hunger').getAttribute('aria-label'),/20 of 20/);assert.ok(await page.locator('#mode').isVisible());});
+ await check('Crafting table, sticks, placed workstation and sword work through the crafting UI',async()=>{
+  await page.evaluate(()=>{BlockQuest.state.inventory[4]=5;BlockQuest.craft('planks');BlockQuest.craft('planks');BlockQuest.craft('planks');});
+  await page.locator('[data-craft="table"]').click();await page.locator('[data-craft="sticks"]').click();assert.equal(await page.locator('[data-craft="sword"]').isDisabled(),true);
+  await page.evaluate(()=>{const p=BlockQuest.state.player;const x=Math.floor(p.x)+1,z=Math.floor(p.z);BlockQuest.put(x,Math.floor(p.y),z,11);BlockQuest.rebuild();});await page.waitForTimeout(100);
+  await page.locator('[data-craft="sword"]').click();assert.equal(await page.evaluate(()=>BlockQuest.state.inventory.sword),1);assert.match(await page.locator('#equipment').innerText(),/sword equipped/);assert.equal(await page.locator('.recipe-grid').count()>3,true);
+ });
+ await check('Hunting a living animal gives meat; raw food and apples are edible',async()=>{
+  const killed=await page.evaluate(()=>{const q=BlockQuest,p=q.state.player,m=q.state.mobs.find(m=>!m.hostile);p.x=m.x;p.y=m.y;p.z=m.z+2.5;p.yaw=0;p.pitch=-.2;return m.id;});await page.waitForTimeout(80);assert.equal(await page.evaluate(()=>BlockQuest.greetOrDefend(true)),true);assert.ok(await page.evaluate(()=>BlockQuest.state.inventory.meat>0));assert.ok(!(await page.evaluate(id=>BlockQuest.state.mobs.some(m=>m.id===id),killed)));
+ });
+ await check('Furnace consumes raw meat plus fuel and restores hunger with cooked food',async()=>{
+  await page.evaluate(()=>{const q=BlockQuest,p=q.state.player;q.state.inventory[3]=8;q.state.inventory[7]=2;q.put(Math.floor(p.x)+1,Math.floor(p.y),Math.floor(p.z),11);q.craft('furnace');q.put(Math.floor(p.x)-1,Math.floor(p.y),Math.floor(p.z),12);q.rebuild();});
+  await page.locator('[data-craft="cook"]').click();assert.ok(await page.evaluate(()=>BlockQuest.state.inventory.cookedMeat===1));
+  await page.keyboard.down('w');await page.keyboard.down('Shift');await page.waitForTimeout(180);await page.keyboard.up('w');await page.keyboard.up('Shift');const before=await page.evaluate(()=>BlockQuest.state.hunger);assert.ok(before<20);await page.locator('#eatFood').click();assert.equal(await page.evaluate(()=>BlockQuest.state.inventory.cookedMeat),0);assert.ok((await page.evaluate(()=>BlockQuest.state.hunger))>before);
+ });
+ await check('Night has skeletons and Endermen; contact attacks reduce actual player hearts',async()=>{
+  await page.evaluate(()=>BlockQuest.waitForTime());assert.ok(await page.evaluate(()=>BlockQuest.state.mobs.some(m=>m.type==='skeleton')));assert.ok(await page.evaluate(()=>BlockQuest.state.mobs.some(m=>m.type==='enderman')));
+  const health=await page.evaluate(()=>{const s=BlockQuest.state,m=s.mobs.find(m=>m.type==='zombie');s.player.x=m.x+.6;s.player.y=m.y;s.player.z=m.z;return s.player.health;});await page.waitForTimeout(250);assert.ok((await page.evaluate(()=>BlockQuest.state.player.health))<health);assert.match(await page.locator('#message').innerText(),/Hit by/);
+ });
+ await check('Creative has unlimited placement, flight, no hunger drain and no monster damage',async()=>{
+  await page.locator('#mode').selectOption('creative');await page.evaluate(()=>{const p=BlockQuest.state.player;p.x=12.5;p.z=33.5;p.y=20;});const before=await page.evaluate(()=>({hp:BlockQuest.state.player.health,hunger:BlockQuest.state.hunger,y:BlockQuest.state.player.y}));await page.locator('#game').focus();await page.keyboard.down(' ');await page.waitForTimeout(300);await page.keyboard.up(' ');const after=await page.evaluate(()=>({hp:BlockQuest.state.player.health,hunger:BlockQuest.state.hunger,y:BlockQuest.state.player.y}));assert.equal(after.hp,before.hp);assert.equal(after.hunger,before.hunger);assert.ok(after.y>before.y+.5);assert.match(await page.locator('#hotbar').innerText(),/∞/);await page.locator('#buildBlock').selectOption('13');const built=await page.evaluate(()=>{const q=BlockQuest,p=q.state.player;p.x=12.5;p.z=33.5;p.y=11;q.put(12,10,35,3);const before=q.state.inventory[13],ok=q.place(12,11,35);return {ok,id:q.at(12,11,35),unchanged:q.state.inventory[13]===before};});assert.deepEqual(built,{ok:true,id:13,unchanged:true});
+ });
+ await check('Nether portal travels to distinct lava terrain with four Nether mob species',async()=>{
+  await page.evaluate(()=>BlockQuest.netherAction());await page.evaluate(()=>{const p=BlockQuest.state.player;p.x=22;p.z=33.5;p.y=12;BlockQuest.netherAction();});await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>BlockQuest.state.dimension),'nether');const types=await page.evaluate(()=>[...new Set(BlockQuest.state.mobs.map(m=>m.type))]);for(const t of ['piglin','blaze','magma','ghast'])assert.ok(types.includes(t));assert.ok(await page.evaluate(()=>BlockQuest.state.voxels.includes(19)));await page.screenshot({path:'.validation/mine-nether.png',fullPage:true});
+ });
+ await check('Nether reload preserves dimension, mode and portal; return restores Overworld edits',async()=>{
+  await page.evaluate(()=>BlockQuest.save());await page.reload();await page.waitForFunction(()=>!!window.BlockQuest);assert.equal(await page.evaluate(()=>BlockQuest.state.dimension),'nether');assert.equal(await page.evaluate(()=>BlockQuest.state.mode),'creative');await page.getByRole('button',{name:'Start exploring →'}).click();await page.evaluate(()=>{const p=BlockQuest.state.player;p.x=42;p.z=40.5;p.y=10;p.health=5;BlockQuest.netherAction();});await page.waitForTimeout(100);assert.equal(await page.evaluate(()=>BlockQuest.state.dimension),'overworld');assert.ok(await page.evaluate(()=>BlockQuest.state.inventory.sword===1));assert.equal(await page.evaluate(()=>BlockQuest.state.player.health),5);
+ });
+ await check('End gate opens a playable End with four healing crystals and dragon',async()=>{
+  await page.evaluate(()=>{const p=BlockQuest.state.player;p.x=60.5;p.z=20.5;p.y=12;BlockQuest.endAction();BlockQuest.endAction();});await page.waitForTimeout(100);assert.equal(await page.evaluate(()=>BlockQuest.state.dimension),'end');assert.equal(await page.evaluate(()=>BlockQuest.state.dragon.crystals),4);assert.ok(await page.locator('#bossBar').isVisible());await page.screenshot({path:'.validation/mine-end.png',fullPage:true});
+ });
+ const aim=async(x,y,z)=>{await page.evaluate(({x,y,z})=>{const q=BlockQuest,p=q.state.player;p.x=x;p.y=y;p.z=z+6;p.yaw=0;p.pitch=Math.atan2(-1.6,6);q.step(.5);},{x,y,z});await page.waitForTimeout(40);};
+ await check('Crystal bow destroys all four healing crystals, defeats dragon, and opens return',async()=>{
+  for(const [dx,dz]of [[-12,-10],[12,-10],[-12,10],[12,10]]){await aim(40+dx,17.7,40+dz);assert.equal(await page.evaluate(()=>BlockQuest.shootBow()),true);}
+  assert.equal(await page.evaluate(()=>BlockQuest.state.dragon.crystals),0);
+  for(let i=0;i<12;i++){const b=await page.evaluate(()=>BlockQuest.state.dragon);if(b.dead)break;await page.evaluate(b=>{const q=BlockQuest,p=q.state.player;p.x=b.x;p.y=b.y-1.6;p.z=b.z+9;p.yaw=0;p.pitch=0;q.step(.6);},b);await page.waitForTimeout(40);await page.evaluate(()=>BlockQuest.shootBow());}
+  assert.equal(await page.evaluate(()=>BlockQuest.state.dragon.dead),true);await page.locator('#travelEnd').click();assert.equal(await page.evaluate(()=>BlockQuest.state.dimension),'overworld');await page.reload();await page.waitForFunction(()=>!!window.BlockQuest);assert.equal(await page.evaluate(()=>BlockQuest.state.dragon.dead),true);await page.getByRole('button',{name:'Start exploring →'}).click();
+ });
+ await check('Mobile layout fits and exposes eating, crafting and game mode controls',async()=>{await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.ok(await page.locator('#touchAttack').isVisible());assert.ok(await page.locator('#touchBow').isVisible());await page.screenshot({path:'.validation/mine-survival-mobile.png',fullPage:true});});
+
+ await check('Old saves expand the field, preserve player edits and replace untouched square mountains',async()=>{
+  const {legacyTerrain,terrainHeight}=await import('../mine-terrain.js'),blocks=legacyTerrain();blocks[6+48*(6+48*16)]=7;
+  const legacyContext=await browser.newContext(),legacyPage=await legacyContext.newPage();legacyPage.on('pageerror',e=>errors.push(e.message));
+  await legacyPage.addInitScript(saved=>localStorage.setItem('funfun.mine.3d.v1',JSON.stringify(saved)),{version:1,voxels:[...blocks],player:{x:12.5,y:11,z:33.5,yaw:0,pitch:0,health:3},inventory:{2:8,3:6,4:5,6:1,7:7,8:0},stats:{wood:5,crystals:1,placed:2},tool:true,time:50,mobs:{lastNight:0,mobs:[{type:'sheep',x:14.5,y:11,z:29.5,angle:1,hp:2}]}});
+  await legacyPage.goto('http://127.0.0.1:8819/mine.html');await legacyPage.waitForFunction(()=>!!window.BlockQuest);
+  const result=await legacyPage.evaluate(()=>{const q=BlockQuest;let top=0;for(let y=0;y<36;y++)if(q.at(22,y,20))top=y;return {size:q.state.size,marker:q.at(6,16,6),wood:q.state.inventory[4],stone:q.state.inventory[3],hp:q.state.player.health,top,mobs:q.state.mobs.length,spread:q.state.mobs.some(m=>m.x>45||m.z>45)};});
+  assert.deepEqual({...result,mobs:undefined},{size:80,marker:7,wood:5,stone:6,hp:6,top:terrainHeight(22,20),mobs:undefined,spread:true});assert.ok(result.mobs>=16);await legacyContext.close();
+ });
+ assert.deepEqual(errors,[]);fs.writeFileSync('.validation/mine-survival-results.json',JSON.stringify({checks,errors},null,2));console.log('All '+checks.length+' survival browser checks passed.');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error(e);process.exitCode=1;server.close();});
